@@ -1,3 +1,11 @@
+scarpa-connection-manager (1.2.22-20) stable; urgency=medium
+
+  * Added MobaXterm import
+  * Changed to Scrolldown menybar at import 
+  * Added list all files at Import  
+
+ -- Tomas Larsson <larre.b.larsson@gmail.com>  Tue, 05 May 2026 13:00:00 +0100  
+
 scarpa-connection-manager (1.2.22-19) stable; urgency=medium
 
   * Bumping version due to missmatch at PPA

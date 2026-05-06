@@ -3738,7 +3738,7 @@ class ScarpaConnectionManager(Gtk.Application):
 
     # ── File Menu: Import Servers ───────────────────────────────────────
     def on_import(self, *args):
-        """Builds and displays the Graphical Import Wizard with Radio Buttons"""
+        """Builds and displays the Graphical Import Wizard with a Dropdown Menu"""
         dialog = Gtk.Dialog(
             title="Import Server Configurations",
             transient_for=self.win if hasattr(self, 'win') and self.win else None,
@@ -3765,20 +3765,23 @@ class ScarpaConnectionManager(Gtk.Application):
         label.set_halign(Gtk.Align.START)
         box.pack_start(label, False, False, 0)
         
-        # Radio Buttons
-        rb_scarpa = Gtk.RadioButton.new_with_label_from_widget(None, "SCARPA Connection Manager (.json, .gpg)")
-        rb_securecrt = Gtk.RadioButton.new_with_label_from_widget(rb_scarpa, "SecureCRT (.xml)")
-        rb_putty = Gtk.RadioButton.new_with_label_from_widget(rb_scarpa, "PuTTY Windows (.reg)")
-        rb_putty_linux = Gtk.RadioButton.new_with_label_from_widget(rb_scarpa, "PuTTY Linux (Folder)")
+        # Dropdown Menu (ComboBoxText)
+        format_combo = Gtk.ComboBoxText()
+        # append(id, text) - We use the ID later to know what was selected
+        format_combo.append("scarpa", "Scarpa Connection Manager")
+        format_combo.append("securecrt", "SecureCRT")
+        format_combo.append("putty_win", "PuTTY Windows")
+        format_combo.append("putty_linux", "PuTTY Linux")
+        format_combo.append("mobaxterm", "MobaXterm")
         
-        # Pack radio buttons with slight indentation
-        rb_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=5)
-        rb_box.set_margin_start(10)
-        rb_box.pack_start(rb_scarpa, False, False, 0)
-        rb_box.pack_start(rb_securecrt, False, False, 0)
-        rb_box.pack_start(rb_putty, False, False, 0)
-        rb_box.pack_start(rb_putty_linux, False, False, 0)
-        box.pack_start(rb_box, False, False, 0)
+        # Set the default selected item to the first one (SCARPA)
+        format_combo.set_active(0)
+        
+        # Pack the dropdown with a slight margin
+        combo_box_container = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=5)
+        combo_box_container.set_margin_start(10)
+        combo_box_container.pack_start(format_combo, False, False, 0)
+        box.pack_start(combo_box_container, False, False, 0)
         
         # File chooser row
         file_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
@@ -3793,11 +3796,13 @@ class ScarpaConnectionManager(Gtk.Application):
         file_box.pack_start(browse_button, False, False, 0)
         box.pack_start(file_box, False, False, 5)
         
-        # The Browse Button Callback (Changes filter based on radio button)
+        # The Browse Button Callback (Changes filter based on dropdown selection)
         def on_browse_clicked(btn):
+            selected_format = format_combo.get_active_id()
+            
             # --- SMART CHOOSER LOGIC ---
             # If Linux PuTTY is selected, launch a FOLDER chooser
-            if rb_putty_linux.get_active():
+            if selected_format == "putty_linux":
                 chooser = Gtk.FileChooserDialog(
                     title="Select PuTTY Sessions Folder",
                     parent=dialog,
@@ -3824,19 +3829,34 @@ class ScarpaConnectionManager(Gtk.Application):
                     Gtk.STOCK_OPEN, Gtk.ResponseType.OK
                 )
                 
+                # 1. Create the strict filter based on the dropdown
                 filter_custom = Gtk.FileFilter()
-                if rb_scarpa.get_active():
-                    filter_custom.set_name("SCARPA Data (*.json, *.gpg)")
+                if selected_format == "scarpa":
+                    filter_custom.set_name("Scarpa Connection Manager (*.json, *.gpg)")
                     filter_custom.add_pattern("*.json")
                     filter_custom.add_pattern("*.gpg")
-                elif rb_securecrt.get_active():
+                elif selected_format == "securecrt":
                     filter_custom.set_name("SecureCRT XML (*.xml)")
                     filter_custom.add_pattern("*.xml")
-                elif rb_putty.get_active():
+                elif selected_format == "putty_win":
                     filter_custom.set_name("PuTTY Registry (*.reg)")
                     filter_custom.add_pattern("*.reg")
+                elif selected_format == "mobaxterm":
+                    filter_custom.set_name("MobaXterm Config (*.mobaconf, *.ini)")
+                    filter_custom.add_pattern("*.mobaconf")
+                    filter_custom.add_pattern("*.ini")
+                    filter_custom.add_pattern("*.mxtsessions")
                 
+                # Add the specific filter first (makes it the default)
                 chooser.add_filter(filter_custom)
+                
+                # 2. Create the "All Files" fallback filter
+                filter_any = Gtk.FileFilter()
+                filter_any.set_name("All Files (*)")
+                filter_any.add_pattern("*")
+                
+                # Add the wildcard filter second
+                chooser.add_filter(filter_any)
             
             if chooser.run() == Gtk.ResponseType.OK:
                 file_entry.set_text(chooser.get_filename())
@@ -3854,15 +3874,19 @@ class ScarpaConnectionManager(Gtk.Application):
             if not path:
                 self.show_error_dialog("No Selection", "Please browse for a file or folder to import.")
             else:
-                # Route to the correct import backend
-                if rb_scarpa.get_active():
+                # Route to the correct import backend based on the dropdown ID
+                selected_format = format_combo.get_active_id()
+                
+                if selected_format == "scarpa":
                     self.process_scarpa_import(path)
-                elif rb_securecrt.get_active():
+                elif selected_format == "securecrt":
                     self.process_securecrt_import(path)
-                elif rb_putty.get_active():
+                elif selected_format == "putty_win":
                     self.process_putty_import(path)
-                elif rb_putty_linux.get_active():
+                elif selected_format == "putty_linux":
                     self.process_putty_linux_import(path)
+                elif selected_format == "mobaxterm":
+                    self.process_mobaxterm_import(path)
                     
         dialog.destroy()
 
@@ -4249,6 +4273,145 @@ class ScarpaConnectionManager(Gtk.Application):
             import traceback
             traceback.print_exc()
             self._error(f"An error occurred during Linux PuTTY import:\n{e}")
+
+    def process_mobaxterm_import(self, filepath):
+        """Parses MobaXterm .mobaconf or .ini files with Interactive Auto-Renaming"""
+        import configparser
+        import traceback
+        
+        config = configparser.ConfigParser(strict=False, interpolation=None)
+        config.optionxform = str 
+        
+        try:
+            # Try UTF-8 first, fallback to cp1252 if it's an older Windows export
+            try:
+                config.read(filepath, encoding='utf-8')
+            except UnicodeDecodeError:
+                config.read(filepath, encoding='cp1252')
+                
+            imported_servers = []
+            
+            # 1. Parse the MobaXterm configuration
+            for section in config.sections():
+                if section.startswith("Bookmarks"):
+                    folder = ""
+                    # Grab the folder path if it exists in this section
+                    if "SubRep" in config[section]:
+                        # Normalize Windows backslashes to forward slashes for the GUI
+                        folder = config[section]["SubRep"].replace("\\", "/") 
+                        
+                    for key, val in config.items(section):
+                        if key in ["SubRep", "ImgNum"]:
+                            continue
+                            
+                        parts = val.split('%')
+                        if len(parts) >= 4:
+                            host = parts[1]
+                            port = int(parts[2]) if parts[2].isdigit() else 22
+                            user = parts[3].strip() if parts[3].strip() else ""
+                            
+                            # Build the raw server dict
+                            srv = {
+                                "name": key,
+                                "host": host,
+                                "port": port,
+                                "user": user,
+                                "type": "SSH"
+                            }
+                            
+                            if folder:
+                                srv["folder"] = folder
+                                
+                            imported_servers.append(srv)
+                            
+            if not imported_servers:
+                self._error("No valid servers found in the selected MobaXterm file.")
+                return
+
+            # 2. Apply default settings (identical to PuTTY logic)
+            for srv in imported_servers:
+                srv.setdefault("auto_sequence", [])
+                srv.setdefault("port_forwards", [])
+                srv.setdefault("folder", ROOT_FOLDER)
+                
+            # 3. Setup Deduplication trackeres
+            existing_sigs = {
+                (s.get("name"), s.get("host"), s.get("user"), s.get("port"), s.get("folder"))
+                for s in self.servers
+            }
+            existing_names = { s.get("name") for s in self.servers if s.get("name") }
+
+            unique_new_servers = []
+            
+            # 4. Filter, auto-rename, and add folders
+            for srv in imported_servers:
+                base_name = srv.get("name")
+                
+                # First, check if this EXACT server is already in the list
+                sig = (base_name, srv.get("host"), srv.get("user"), srv.get("port"), srv.get("folder"))
+                if sig in existing_sigs:
+                    continue  # It is a 100% identical copy, skip it silently.
+                    
+                # If the name exists but the settings are different, ASK THE USER!
+                new_name = base_name
+                if base_name in existing_names:
+                    msg = (f"A connection named '{base_name}' already exists, but the imported version "
+                           f"has different settings (IP/Port/User).\n\n"
+                           f"Do you want to import this as a new connection and auto-rename it?")
+                           
+                    wants_to_import = self.ask_yes_no_dialog("Duplicate Name Detected", msg)
+                    
+                    if not wants_to_import:
+                        continue # User clicked 'No', skip it!
+                        
+                    # User clicked 'Yes', find the next available safe name
+                    counter = 1
+                    while new_name in existing_names:
+                        new_name = f"{base_name}({counter})"
+                        counter += 1
+                        
+                # Apply the name (whether it's the original or the new renamed one)
+                srv["name"] = new_name
+                unique_new_servers.append(srv)
+                
+                # Check if we need to register a new custom folder from MobaXterm
+                f = srv.get("folder")
+                if f and f != ROOT_FOLDER and f not in self.user_folders:
+                    self.user_folders.append(f)
+                
+                # Update our trackers so we don't use this name again in the same import file
+                new_sig = (new_name, srv.get("host"), srv.get("user"), srv.get("port"), srv.get("folder"))
+                existing_sigs.add(new_sig)
+                existing_names.add(new_name)
+
+            if not unique_new_servers:
+                self.show_info_dialog("No New Servers", "No new servers were imported. They were either exact duplicates or skipped by the user.")
+                return
+
+            added = len(unique_new_servers)
+            
+            # 5. Save everything and refresh the UI (identical to PuTTY logic)
+            self.servers.extend(unique_new_servers) 
+            
+            try:
+                save_servers(self.servers, self.master_passphrase)
+            except Exception as e:
+                self._error(f"Failed to save MobaXterm imported servers: {e}")
+                return
+                
+            self.settings["folders"] = self.user_folders
+            save_settings(self.settings)
+
+            self.reload_folders()
+            self.populate_tree()
+            self.tree.expand_row(Gtk.TreePath.new_from_string("0"), False)
+            
+            self.log(f"Imported {added} unique MobaXterm servers.")
+            self.show_info_dialog("Import Successful", f"Successfully imported {added} servers from MobaXterm.")
+            
+        except Exception as e:
+            traceback.print_exc()
+            self._error(f"An error occurred during MobaXterm import:\n{e}")
 
     def on_import_putty_linux_clicked(self, widget):
         """Opens a folder chooser dialog for Linux PuTTY imports."""
