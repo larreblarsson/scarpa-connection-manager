@@ -2815,6 +2815,7 @@ class ScarpaConnectionManager(Gtk.Application):
         # Only show window if master_passphrase was successfully set/verified
         if self.master_passphrase:
             self.win.show_all()
+            self.check_ppa_status()
             self.populate_tree() # Ensure tree is populated after servers are loaded
             self.tree.expand_row(Gtk.TreePath.new_from_string("0"), False)
         else:
@@ -2825,36 +2826,80 @@ class ScarpaConnectionManager(Gtk.Application):
     def check_ppa_status(self):
         """Checks if the PPA was disabled by an Ubuntu release upgrade."""
         import os
-        import subprocess
-
-        # Only run this check on Debian/Ubuntu systems
+        import re
+        
         if not os.path.exists("/etc/apt/sources.list.d/"):
             return
 
         ppa_file_prefix = "larre-b-larsson-ubuntu-scarpa-connection-manager"
         
+        found_ppa_files = False
+        ppa_is_active = False
+        
         try:
-            # Find the PPA file in the apt directory
             for filename in os.listdir("/etc/apt/sources.list.d/"):
-                if filename.startswith(ppa_file_prefix) and filename.endswith(".list"):
+                # Ignore system backup files
+                if filename.startswith(ppa_file_prefix) and not filename.endswith((".save", ".distUpgrade")):
+                    found_ppa_files = True
                     filepath = os.path.join("/etc/apt/sources.list.d/", filename)
                     
-                    with open(filepath, 'r') as f:
-                        content = f.read()
+                    try:
+                        with open(filepath, 'r') as f:
+                            content = f.read()
+                    except Exception:
+                        continue
                         
-                    # If the file exists but every deb line is commented out (#), it was disabled!
-                    if "deb " in content and not "\ndeb " in f"\n{content}":
-                        # We found a commented-out PPA!
-                        self.show_info_dialog(
-                            "Updates Disabled", 
-                            "It looks like you recently upgraded your operating system!\n\n"
-                            "Ubuntu automatically disables third-party updates during OS upgrades. "
-                            "To continue receiving updates for Scarpa Connection Manager, please run this in your terminal:\n\n"
-                            "sudo add-apt-repository ppa:larre-b-larsson/scarpa-connection-manager"
-                        )
-                        return # Only show once per session
-        except Exception as e:
-            pass # Fail silently, it's just a helpful check
+                    content_lower = content.lower()
+                    
+                    legacy_disabled = "deb " in content_lower and not "\ndeb " in f"\n{content_lower}"
+                    modern_no = re.search(r"enabled:\s*no", content_lower)
+                    modern_false = re.search(r"enabled:\s*false", content_lower)
+                    modern_uris = "# uris:" in content_lower
+                    
+                    is_this_file_disabled = bool(legacy_disabled or modern_no or modern_false or modern_uris)
+                    
+                    # If we find even ONE file that is NOT disabled, the PPA is healthy!
+                    if not is_this_file_disabled:
+                        ppa_is_active = True
+                        break # Stop checking, we are good!
+            
+            # Only show the popup if we found PPA files, but ALL of them were disabled
+            if found_ppa_files and not ppa_is_active:
+                dialog = Gtk.Dialog(
+                    title="Updates Disabled",
+                    transient_for=self.win if hasattr(self, 'win') and self.win else None,
+                    flags=0
+                )
+                dialog.add_buttons(Gtk.STOCK_OK, Gtk.ResponseType.OK)
+                
+                box = dialog.get_content_area()
+                box.set_spacing(10)
+                box.set_margin_top(15)
+                box.set_margin_bottom(15)
+                box.set_margin_start(20)
+                box.set_margin_end(20)
+                
+                info_label = Gtk.Label(
+                    label="It looks like you recently upgraded your operating system!\n\n"
+                          "Ubuntu automatically disables third-party updates during OS upgrades.\n"
+                          "To continue receiving updates for Scarpa Connection Manager,\n"
+                          "please copy and run this in your terminal:"
+                )
+                info_label.set_line_wrap(True)
+                info_label.set_xalign(0)
+                box.pack_start(info_label, False, False, 0)
+                
+                cmd_entry = Gtk.Entry()
+                cmd_entry.set_text("sudo add-apt-repository ppa:larre-b-larsson/scarpa-connection-manager")
+                cmd_entry.set_editable(False) 
+                box.pack_start(cmd_entry, False, False, 10)
+                
+                dialog.show_all()
+                dialog.run()
+                dialog.destroy()
+                        
+        except Exception:
+            pass
 
     def init_ui_elements(self, vbox):
         # This method creates all GUI elements AFTER the main window (self.win) is available.
@@ -5477,9 +5522,15 @@ class ScarpaConnectionManager(Gtk.Application):
         if not cfg:
             self.log("Launch cancelled (missing credentials or user aborted).")
             return
+       
+        host = cfg.get("host")
+        port = int(cfg.get("port", 22))
+        if not self.check_host_connection(host, port, timeout_seconds=3):
+            self.log(f"Launch cancelled (No connection to {host}:{port}).")
+            return
         
         self.log(f"Launching Visual SFTP for: {cfg['name']}")
-    
+ 
         host = cfg.get("host")
         port = cfg.get("port", 22)
         user = cfg.get("user")
