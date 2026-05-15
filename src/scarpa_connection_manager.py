@@ -2822,6 +2822,40 @@ class ScarpaConnectionManager(Gtk.Application):
             if hasattr(self, 'win') and self.win:
                 self.win.destroy()
 
+    def check_ppa_status(self):
+        """Checks if the PPA was disabled by an Ubuntu release upgrade."""
+        import os
+        import subprocess
+
+        # Only run this check on Debian/Ubuntu systems
+        if not os.path.exists("/etc/apt/sources.list.d/"):
+            return
+
+        ppa_file_prefix = "larre-b-larsson-ubuntu-scarpa-connection-manager"
+        
+        try:
+            # Find the PPA file in the apt directory
+            for filename in os.listdir("/etc/apt/sources.list.d/"):
+                if filename.startswith(ppa_file_prefix) and filename.endswith(".list"):
+                    filepath = os.path.join("/etc/apt/sources.list.d/", filename)
+                    
+                    with open(filepath, 'r') as f:
+                        content = f.read()
+                        
+                    # If the file exists but every deb line is commented out (#), it was disabled!
+                    if "deb " in content and not "\ndeb " in f"\n{content}":
+                        # We found a commented-out PPA!
+                        self.show_info_dialog(
+                            "Updates Disabled", 
+                            "It looks like you recently upgraded your operating system!\n\n"
+                            "Ubuntu automatically disables third-party updates during OS upgrades. "
+                            "To continue receiving updates for Scarpa Connection Manager, please run this in your terminal:\n\n"
+                            "sudo add-apt-repository ppa:larre-b-larsson/scarpa-connection-manager"
+                        )
+                        return # Only show once per session
+        except Exception as e:
+            pass # Fail silently, it's just a helpful check
+
     def init_ui_elements(self, vbox):
         # This method creates all GUI elements AFTER the main window (self.win) is available.
 
@@ -5194,6 +5228,27 @@ class ScarpaConnectionManager(Gtk.Application):
         dialog.destroy()
         return None # User clicked cancel
 
+    def check_host_connection(self, host, port, timeout_seconds=3):
+        """Probes the target host/port to verify it is reachable before launching."""
+        import socket
+        try:
+            # create_connection automatically handles DNS resolution and IPv4/IPv6
+            sock = socket.create_connection((host, port), timeout=timeout_seconds)
+            sock.close()
+            return True
+        except socket.timeout:
+            self.show_info_dialog("Connection Timeout", f"No connection to host.\n\nThe server at {host}:{port} did not respond within {timeout_seconds} seconds.")
+            return False
+        except ConnectionRefusedError:
+            self.show_info_dialog("Connection Refused", f"No connection to host.\n\nThe server at {host}:{port} actively refused the connection.")
+            return False
+        except socket.gaierror:
+            self.show_info_dialog("Host Not Found", f"No connection to host.\n\nCould not resolve the hostname: {host}")
+            return False
+        except Exception as e:
+            self.show_info_dialog("Connection Error", f"No connection to host.\n\nError: {str(e)}")
+            return False
+
     # ── Connect Actions (SSH & SFTP) ─────────────────────────────────────────
     def on_ssh(self, action, param):
         selection = self.tree.get_selection()
@@ -5213,6 +5268,12 @@ class ScarpaConnectionManager(Gtk.Application):
         cfg = self.ensure_credentials(idx)
         if not cfg:
             self.log("Launch cancelled (missing credentials or user aborted).")
+            return
+
+        host = cfg.get("host")
+        port = int(cfg.get("port", 22))
+        if not self.check_host_connection(host, port, timeout_seconds=3):
+            self.log(f"Launch cancelled (No connection to {host}:{port}).")
             return
 
         self.current_logging_enabled = cfg.get("logging_enabled", False)
@@ -5300,6 +5361,12 @@ class ScarpaConnectionManager(Gtk.Application):
         if not cfg:
             self.log("Launch cancelled (missing credentials or user aborted).")
             return 
+
+        host = cfg.get("host")
+        port = int(cfg.get("port", 22))
+        if not self.check_host_connection(host, port, timeout_seconds=3):
+            self.log(f"Launch cancelled (No connection to {host}:{port}).")
+            return
  
         self.current_logging_enabled = cfg.get("logging_enabled", False)
         self.current_log_path = cfg.get("log_path", "")
