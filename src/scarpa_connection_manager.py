@@ -5088,6 +5088,112 @@ class ScarpaConnectionManager(Gtk.Application):
         # Use your built-in dialog launcher!
         self._open_server_dialog(cfg=actual_server)
 
+    def ensure_credentials(self, idx):
+        """Checks for missing host/credentials, prompts the user, and saves if requested.
+           Returns a safe, connection-ready copy of the config, or None if cancelled."""
+        import copy
+        
+        real_cfg = self.servers[idx]
+        # Create a disconnected copy so we don't accidentally pollute the global memory
+        launch_cfg = copy.deepcopy(real_cfg)
+
+        needs_host = not launch_cfg.get("host")
+        needs_user = not launch_cfg.get("user")
+        needs_pass = launch_cfg.get("auth_method") == "password" and not launch_cfg.get("password")
+
+        # If we have everything we need, silently proceed with the copy!
+        if not needs_host and not needs_user and not needs_pass:
+            return launch_cfg
+
+        # Build the dynamic dialog
+        dialog = Gtk.Dialog(
+            title=f"Details needed for {launch_cfg.get('name', 'Server')}",
+            transient_for=self.win if hasattr(self, 'win') and self.win else None,
+            flags=0
+        )
+        dialog.add_buttons(
+            Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL,
+            "Connect", Gtk.ResponseType.OK
+        )
+        dialog.set_default_response(Gtk.ResponseType.OK)
+
+        box = dialog.get_content_area()
+        box.set_spacing(10)
+        box.set_margin_top(15)
+        box.set_margin_bottom(15)
+        box.set_margin_start(20)
+        box.set_margin_end(20)
+
+        box.pack_start(Gtk.Label(label="Please provide the missing connection details.", xalign=0), False, False, 0)
+
+        # 1. Host Prompt
+        host_entry = None
+        if needs_host:
+            box.pack_start(Gtk.Label(label="Host (IP or Hostname):", xalign=0), False, False, 0)
+            host_entry = Gtk.Entry()
+            host_entry.set_activates_default(True) 
+            box.pack_start(host_entry, False, False, 0)
+
+        # 2. User Prompt
+        user_entry = None
+        if needs_user:
+            box.pack_start(Gtk.Label(label="Username:", xalign=0), False, False, 0)
+            user_entry = Gtk.Entry()
+            user_entry.set_activates_default(True) 
+            box.pack_start(user_entry, False, False, 0)
+
+        # 3. Password Prompt
+        pass_entry = None
+        if needs_pass:
+            box.pack_start(Gtk.Label(label="Password:", xalign=0), False, False, 0)
+            pass_entry = Gtk.Entry()
+            pass_entry.set_visibility(False) 
+            pass_entry.set_activates_default(True)
+            box.pack_start(pass_entry, False, False, 0)
+
+        save_check = Gtk.CheckButton(label="Remember these details")
+        box.pack_start(save_check, False, False, 10)
+
+        # Smart focus: Put the cursor in the absolute top-most missing field
+        if needs_host:
+            host_entry.grab_focus()
+        elif needs_user:
+            user_entry.grab_focus()
+        elif needs_pass:
+            pass_entry.grab_focus()
+
+        dialog.show_all()
+        response = dialog.run()
+
+        if response == Gtk.ResponseType.OK:
+            # 1. ALWAYS apply to the temporary launch config so the session works
+            # We use .strip() on Host and User to prevent accidental spacebar typos
+            if needs_host:
+                launch_cfg["host"] = host_entry.get_text().strip()
+            if needs_user:
+                launch_cfg["user"] = user_entry.get_text().strip()
+            if needs_pass:
+                launch_cfg["password"] = pass_entry.get_text()
+
+            # 2. ONLY apply to the real memory and disk if the user checks the box!
+            if save_check.get_active():
+                if needs_host:
+                    real_cfg["host"] = host_entry.get_text().strip()
+                if needs_user:
+                    real_cfg["user"] = user_entry.get_text().strip()
+                if needs_pass:
+                    real_cfg["password"] = pass_entry.get_text()
+                try:
+                    save_servers(self.servers, getattr(self, 'master_passphrase', None))
+                except Exception as e:
+                    self.log(f"Error saving details: {e}")
+                    
+            dialog.destroy()
+            return launch_cfg # Return the completed temp config
+            
+        dialog.destroy()
+        return None # User clicked cancel
+
     # ── Connect Actions (SSH & SFTP) ─────────────────────────────────────────
     def on_ssh(self, action, param):
         selection = self.tree.get_selection()
@@ -5104,7 +5210,11 @@ class ScarpaConnectionManager(Gtk.Application):
         if node != "server":
             return self._info("Select a server first.")
     
-        cfg = self.servers[idx]
+        cfg = self.ensure_credentials(idx)
+        if not cfg:
+            self.log("Launch cancelled (missing credentials or user aborted).")
+            return
+
         self.current_logging_enabled = cfg.get("logging_enabled", False)
         self.current_log_path = cfg.get("log_path", "")
         self.current_log_mode = cfg.get("log_mode", "append")
@@ -5186,7 +5296,11 @@ class ScarpaConnectionManager(Gtk.Application):
         if node != "server":
             return self._info("Select a server first.")
     
-        cfg = self.servers[idx]
+        cfg = self.ensure_credentials(idx)
+        if not cfg:
+            self.log("Launch cancelled (missing credentials or user aborted).")
+            return 
+ 
         self.current_logging_enabled = cfg.get("logging_enabled", False)
         self.current_log_path = cfg.get("log_path", "")
         self.current_log_mode = cfg.get("log_mode", "append") 
@@ -5292,7 +5406,11 @@ class ScarpaConnectionManager(Gtk.Application):
             if node != "server":
                 return self._info("Select a server first.")
     
-        cfg = self.servers[idx]
+        cfg = self.ensure_credentials(idx)
+        if not cfg:
+            self.log("Launch cancelled (missing credentials or user aborted).")
+            return
+        
         self.log(f"Launching Visual SFTP for: {cfg['name']}")
     
         host = cfg.get("host")
