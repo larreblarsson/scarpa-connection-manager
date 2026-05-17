@@ -1,6 +1,12 @@
+scarpa-connection-manager (1.2.22-24) stable; urgency=medium
+
+  * Bumping version due to missmatch at PPA
+ 
+ -- Tomas Larsson <larre.b.larsson@gmail.com>  Sun, 17 May 2026 08:00:00 +0100  
+
 scarpa-connection-manager (1.2.22-23) stable; urgency=medium
 
-  * Fixed and updated PPA check 
+  * Fixed and updated PPA check
  
  -- Tomas Larsson <larre.b.larsson@gmail.com>  Fri, 15 May 2026 09:00:00 +0100  
 
