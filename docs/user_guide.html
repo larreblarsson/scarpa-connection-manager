@@ -5,289 +5,685 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Scarpa Connection Manager - User Guide</title>
     <style>
+        :root {
+            --primary-color: #2c3e50;
+            --accent-color: #3498db;
+            --bg-color: #f8f9fa;
+            --text-color: #333;
+            --border-color: #e0e0e0;
+        }
+        
         body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             line-height: 1.6;
-            color: #333;
-            max-width: 950px;
+            color: var(--text-color);
+            background-color: var(--bg-color);
+            margin: 0;
+            padding: 0;
+        }
+
+        .container {
+            max-width: 1000px;
             margin: 0 auto;
-            padding: 20px;
-            background-color: #f9f9f9;
-        }
-        h1, h2, h3, h4 {
-            color: #2c3e50;
-            border-bottom: 1px solid #ddd;
-            padding-bottom: 5px;
-            margin-top: 1.5em;
-        }
-        h1 { font-size: 2.2em; margin-bottom: 0.5em; border-bottom: 2px solid #3498db; padding-bottom: 10px; }
-        h2 { font-size: 1.75em; }
-        h3 { font-size: 1.3em; border-bottom: none; color: #34495e; margin-bottom: 0.5em; }
-        a {
-            color: #3498db;
-            text-decoration: none;
-        }
-        a:hover {
-            text-decoration: underline;
-        }
-        code {
-            font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, Courier, monospace;
-            background-color: #e8e8e8;
-            padding: 2px 5px;
-            border-radius: 3px;
-            font-size: 0.9em;
-            color: #d63384;
-        }
-        pre {
-            background-color: #f4f4f4;
-            color: #000000;
-            padding: 15px;
-            border: 1px solid #cccccc;
-            border-radius: 5px;
-            overflow-x: auto;
-            font-size: 0.95em;
-        }
-        kbd {
-            background-color: #eee;
-            border-radius: 3px;
-            border: 1px solid #b4b4b4;
-            box-shadow: 0 1px 1px rgba(0,0,0,.2), 0 2px 0 0 rgba(255,255,255,.7) inset;
-            color: #333;
-            display: inline-block;
-            font-size: 0.85em;
-            font-weight: 700;
-            line-height: 1;
-            padding: 2px 5px;
-            white-space: nowrap;
-        }
-        .toc {
-            background-color: #fff;
-            border: 1px solid #ddd;
-            border-radius: 5px;
-            padding: 20px;
-            margin-bottom: 2em;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-        }
-        .toc h2 {
-            margin-top: 0;
-            border-bottom: none;
-            font-size: 1.5em;
-        }
-        .toc ul, .toc ol {
-            padding-left: 20px;
-        }
-        .feature-box {
             background: #fff;
-            border-left: 4px solid #3498db;
+            padding: 40px;
+            box-shadow: 0 0 20px rgba(0,0,0,0.05);
+        }
+
+        header {
+            text-align: center;
+            border-bottom: 2px solid var(--accent-color);
+            padding-bottom: 20px;
+            margin-bottom: 40px;
+        }
+
+        h1 { color: var(--primary-color); font-size: 2.5em; margin-bottom: 5px; }
+        h2 { color: var(--primary-color); font-size: 2.0em; border-bottom: 1px solid var(--border-color); padding-bottom: 10px; margin-top: 2em; }
+        h3 { color: var(--accent-color); font-size: 1.6em; margin-top: 1.5em; }
+        h4 { color: var(--primary-color); font-size: 1.35em; margin-top: 1.5em; margin-bottom: 10px; }
+        h5 { color: var(--primary-color); font-size: 1.1em; margin-top: 1.5em; margin-bottom: 10px; font-weight: 600; }        
+
+        p { margin-bottom: 15px; }
+
+        .screenshot-container {
+            background: var(--bg-color);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
             padding: 15px;
-            margin: 15px 0;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            margin: 20px 0;
+            text-align: center;
         }
-        li {
-            margin-bottom: 0.5em;
+
+        .screenshot-container img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 4px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
         }
-        .note {
+
+        .screenshot-caption {
             font-size: 0.9em;
             color: #666;
+            margin-top: 10px;
             font-style: italic;
-            background: #eef7fd;
-            padding: 10px;
-            border-radius: 5px;
-            border-left: 4px solid #3498db;
         }
-        .warning {
-            border-left-color: #e74c3c;
-            background: #fdf2f0;
-            color: #c0392b;
+
+        .note-box {
+            background-color: #e8f4f8;
+            border-left: 4px solid var(--accent-color);
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 0 4px 4px 0;
         }
+
+        /* Table of Contents */
+        .toc {
+            background: #fdfdfd;
+            border: 1px solid var(--border-color);
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 40px;
+        }
+        .toc ul { list-style-type: none; padding-left: 0; }
+        .toc li { margin-bottom: 8px; }
+        .toc ul ul { padding-left: 20px; margin-top: 8px; font-size: 0.95em; } /* Sub-items formatting */
+        .toc a { color: var(--primary-color); text-decoration: none; font-weight: 500; }
+        .toc a:hover { color: var(--accent-color); text-decoration: underline; }
     </style>
 </head>
 <body>
 
-    <h1>Scarpa Connection Manager</h1>
-    <p><strong>Comprehensive User & Technical Guide</strong></p>
+<div class="container">
+    <header>
+        <h1>Scarpa Connection Manager</h1>
+        <p>The fast, native GTK SSH & SFTP manager for Ubuntu</p>
+    </header>
 
     <div class="toc">
-        <h2>Table of Contents</h2>
-        <ol>
-            <li><a href="#introduction">Introduction</a></li>
-            <li><a href="#security">Initial Setup & Security</a></li>
-            <li><a href="#management">Server & Folder Management</a></li>
-            <li><a href="#terminal">Connecting & Terminal Features</a></li>
-            <li><a href="#sftp">SFTP File Manager (GUI)</a></li>
-            <li><a href="#automation">Advanced Automation & Tunneling</a></li>
-            <li><a href="#logging">Logging & Data Management</a></li>
-            <li><a href="#appearance">Appearance & Customization</a></li>
-            <li><a href="#installation">Installation & Troubleshooting</a></li>
-        </ol>
-    </div>
-
-    <h2 id="introduction">1. Introduction</h2>
-    <p>Welcome to the <strong>Scarpa Connection Manager</strong>. Scarpa is a professional-grade GTK3 desktop application built to streamline how system administrators and developers manage SSH and SFTP connections. It combines military-grade encrypted storage, a high-performance VTE terminal emulator, and a fully integrated dual-pane SFTP file manager into a single, cohesive workflow.</p>
-
-    <h2 id="security">2. Initial Setup & Security</h2>
-    <p>Scarpa prioritizes the security of your sensitive credentials above all else. Passwords and private keys are never stored in plain text.</p>
-    
-    <div class="feature-box">
-        <h3>Encryption Architecture</h3>
+        <h3>Table of Contents</h3>
         <ul>
-            <li><strong>Master Passphrase:</strong> On first launch, you are required to set a Master Passphrase. This phrase is hashed using <strong>PBKDF2-HMAC-SHA256</strong> (600,000 iterations) paired with a unique 16-byte cryptographically secure salt.</li>
-            <li><strong>Data Storage:</strong> Your server configurations are encrypted symmetrically using <strong>AES-256 via GnuPG</strong>. The encrypted file is stored locally at <code>~/.local/share/scarpa_connection_manager/ssh_servers.json.gpg</code>.</li>
-            <li><strong>Memory Safety:</strong> Passwords are decrypted exclusively in memory (RAM) during active sessions and are never written to your disk in plain text.</li>
+            <li><a href="#first-launch">1. First Launch & Security</a></li>
+            <li><a href="#main-window">2. The Main Interface</a>
+                <ul>
+                    <li><a href="#add-edit-server">2.1 Add or Edit Server</a>
+                        <ul>
+                            <li><a href="#general-tab">2.1.1 General Tab</a></li>
+                            <li><a href="#auth-tab">2.1.2 Auth Tab</a></li>
+                            <li><a href="#terminal-tab">2.1.3 Terminal Tab</a></li>
+                            <li><a href="#login-actions-tab">2.1.4 Login Actions Tab</a></li>
+                            <li><a href="#port-forwarding-tab">2.1.5 Port Forwarding Tab</a></li>
+                            <li><a href="#appearance-tab">2.1.6 Appearance Tab</a></li>
+                        </ul>
+                    </li>
+                </ul>
+            </li>
+            <li><a href="#organizing">3. Organizing Folders & Servers</a>
+                <ul>
+                    <li><a href="#adding-managing">3.1 Adding & Managing Items</a></li>
+                    <li><a href="#drag-drop">3.2 Drag and Drop</a></li>
+                    <li><a href="#inline-renaming">3.3 Inline Renaming</a></li>
+                </ul>
+            </li>
+            <li><a href="#import-export">4. Importing & Exporting Data</a>
+                <ul>
+                    <li><a href="#importing">4.1 Importing from other Apps</a></li>
+                    <li><a href="#exporting">4.2 Exporting Backups</a></li>
+                </ul>
+            </li>
+			<li><a href="#default-settings">5. Global Default Settings</a></li>
+			<li><a href="#change-password">6. Changing the Master Passphrase</a></li>
+			<li><a href="#connecting">7. Connecting to Servers</a>
+                <ul>
+                    <li><a href="#how-to-connect">7.1 Initiating a Connection</a></li>
+                    <li><a href="#ssh-and-cli-sftp">7.2 SSH & CLI SFTP Sessions</a></li>
+                    <li><a href="#sftp-gui">7.3 Visual SFTP GUI</a>
+                        <ul>
+                            <li><a href="#sftp-refresh">7.3.1 Refresh</a></li>
+							<li><a href="#sftp-add-folder">7.3.2 Add Folder</a></li>
+							<li><a href="#sftp-upload-download">7.3.3 Upload & Download</a></li>
+							<li><a href="#sftp-stop-resume">7.3.4 Stop & Resume Transfers</a></li>
+							<li><a href="#sftp-search">7.3.5 Search Recursively</a></li>
+                        </ul>
+                    </li>
+                </ul>
+            </li>
+			<li><a href="#installation">8. Installation & Troubleshooting</a></li>
+			
+			
+			
+			
+			
         </ul>
     </div>
-    
-    <h3>Changing Your Passphrase</h3>
-    <p>Navigate to <strong>File -> Change Passphrase...</strong>. You will be prompted for your current passphrase, followed by your new one. Scarpa will automatically generate a new salt and securely re-encrypt your entire database.</p>
-    
-    <p class="note warning"><strong>WARNING:</strong> There is no password recovery mechanism. If you forget your Master Passphrase, your data is permanently inaccessible. You will need to manually delete the <code>~/.local/share/scarpa_connection_manager/</code> directory to reset the application.</p>
+    <section id="first-launch">
+        <h2>1. First Launch & Security</h2>
+        <p>Security is at the core of Scarpa Connection Manager. All of your server configurations, passwords, and connection details are heavily encrypted using Fernet symmetric encryption.</p>
+        
+        <div class="screenshot-container">
+            <img src="SetPasswordAtFirstStart.png" alt="Set Master Passphrase">
+            <div class="screenshot-caption">Setting the Master Passphrase on first launch.</div>
+        </div>
+        
+        <p>When you launch the application for the very first time, you will be prompted to create a <strong>Master Passphrase</strong>. This passphrase acts as the master key to unlock your encrypted database. You will need to enter this passphrase every time you open the application.</p>
+        
+        <div class="note-box">
+            <strong>Important:</strong> Do not lose your Master Passphrase! Because the encryption is handled locally on your machine, there is no "password recovery" option. If you lose it, you will not be able to access your saved servers.
+        </div>
+    </section>
 
-    <h2 id="management">3. Server & Folder Management</h2>
-    <p>Scarpa allows you to logically organize hundreds of servers using the main "Session" tree view.</p>
-    
-    <h3>Adding & Organizing</h3>
-    <ul>
-        <li><strong>Add a Folder:</strong> Right-click the root "Session" folder (or any subfolder) and select <strong>Add Folder</strong> to create groups (e.g., "Production", "AWS").</li>
-        <li><strong>Add a Server:</strong> Right-click a folder and select <strong>Add Server</strong>. You must provide a Host IP/Domain, Port, Username, and choose either Password or Private Key authentication.</li>
-        <li><strong>Duplicate Protection:</strong> The application automatically prevents creating two servers with the exact same name inside the same folder.</li>
-        <li><strong>Drag-and-Drop:</strong> Click and drag servers to move them between folders, or drag folders to rearrange your hierarchy.</li>
-        <li><strong>Multi-Selection:</strong> Hold <code>Ctrl</code> or <code>Shift</code> while clicking to select multiple servers or folders for batch deletion or copying.</li>
-        <li><strong>Natural Sorting:</strong> The list automatically sorts items intelligently (e.g., <code>Web-2</code> is placed before <code>Web-10</code>).</li>
-    </ul>
+    <section id="main-window">
+        <h2>2. The Main Interface</h2>
+        <p>Once unlocked, you are presented with the main application window. The interface is designed to be clean and intuitive, utilizing a standard tree-view to manage your sessions.</p>
+        
+        <div class="screenshot-container">
+            <img src="MainWindow.png" alt="Main Window Interface">
+            <div class="screenshot-caption">The main session tree and log window.</div>
+        </div>
 
-    <h3>Editing & Actions</h3>
-    <ul>
-        <li><strong>Connecting:</strong> Rapidly double-click a server to instantly launch its SSH session.</li>
-        <li><strong>Inline Renaming:</strong> Slowly double-click (click, wait, click) a server or folder to rename it directly in the list.</li>
-        <li><strong>Edit Server:</strong> Right-click a server and select <strong>Edit</strong> to modify its settings, add port forwards, or enable logging.</li>
-        <li><strong>Keyboard Accessibility:</strong> Press <code>Enter</code> to instantly submit and save any dialog window (like Add Server, New Folder, or Login Actions).</li>
-        <li><strong>Duplicate & Move:</strong> Use the <strong>Copy/Paste</strong> options in the top menu (or <code>Ctrl+C</code> / <code>Ctrl+V</code>) to duplicate servers.</li>
-        <li><strong>Delete:</strong> Select one or more items and press the <code>Delete</code> key on your keyboard to permanently remove them.</li>
-    </ul>
+        <p>The window is divided into three main areas:</p>
+        <ul>
+            <li><strong>The Top Menu Bar:</strong> Quick access to File, Servers, Folders, Connect, and Help operations.</li>
+            <li><strong>The Session Tree:</strong> Your hierarchical list of folders and saved server configurations.</li>
+            <li><strong>The Log Window (Bottom):</strong> A real-time log showing application events, connection statuses, and errors.</li>
+        </ul>
 
-    <h2 id="terminal">4. Connecting & Terminal Features</h2>
-    
-    <h3>4.1 Launching Connections</h3>
-    <p>Double-click any server to instantly open an SSH terminal session. Alternatively, right-click the server and choose either <strong>SSH</strong>, <strong>SFTP (CLI)</strong>, or <strong>SFTP (GUI)</strong>.</p>
+        <h3 id="add-edit-server">2.1 Add or Edit Server</h3>
+        <p>To begin managing your connections, you need to create a server entry. Because adding a new server and editing an existing one utilize the exact same configuration window, they are managed in exactly the same way.</p>
+        
+        <p>There are two easy ways to open this window:</p>
+        <ul>
+            <li><strong>Via Right-Click:</strong> Right-click on any empty space or a folder to select <strong>Add Server</strong>, or right-click an existing server and select <strong>Edit Server</strong>.</li>
+            <li><strong>Via Top Menu Bar:</strong> Click on <strong>Servers</strong> in the top menu bar, then select <strong>Add</strong> or <strong>Edit</strong>.</li>
+        </ul>
 
-    <h3>4.2 The VTE Terminal Experience</h3>
-    <p>Connections launch in a native, hardware-accelerated terminal window based on the GNOME VTE library.</p>
-    <ul>
-        <li><strong>Smart Copy/Paste:</strong> Pressing <kbd>Ctrl</kbd> + <kbd>C</kbd> will copy text if you have text highlighted. If nothing is highlighted, it intelligently sends a standard interrupt signal (<code>SIGINT</code>) to the server. Use <kbd>Ctrl</kbd> + <kbd>V</kbd> to paste.</li>
-        <li><strong>Smart Resize:</strong> The terminal window size is synchronized with the remote host (<code>SIGWINCH</code>). If you maximize the Scarpa window, text-based apps like <code>htop</code> or <code>vim</code> will scale perfectly.</li>
-        <li><strong>Anti-Idle:</strong> Keep restrictive firewalls from dropping your connection. Configurable in the server's <strong>Terminal</strong> tab, Scarpa can automatically send hidden "keepalive" null packets at set intervals.</li>
-    </ul>
+        <h4 id="general-tab">2.1.1 General Tab</h4>
+        <p>When the configuration window opens, you will default to the <strong>General</strong> tab. This tab holds the core connection details required to reach your remote machine.</p>
 
-    <h3>4.3 Live Settings (In-Session)</h3>
-    <p>You do not need to disconnect to change terminal settings. Click the <strong>Menu Button (≡)</strong> in the header bar of any active terminal window to open the Server Editor. Any changes to Fonts, Colors, or Scrollback are applied instantly when you click OK.</p>
+        <div class="screenshot-container">
+            <img src="AddServer.png" alt="General Tab Dialog">
+            <div class="screenshot-caption">The General tab of the Server configuration window.</div>
+        </div>
 
-    <h2 id="sftp">5. SFTP File Manager (GUI)</h2>
-    <p>Scarpa includes a powerful, fully graphical SFTP client for visual file management. Right-click any server and select <strong>SFTP (GUI)</strong> to open it.</p>
-    
-    <h3>5.1 Interface & Navigation</h3>
-    <ul>
-        <li><strong>Dual-Pane View:</strong> Your Local Machine is displayed on the left, and the Remote Server is on the right.</li>
-        <li><strong>Breadcrumb Navigation:</strong> Click any part of the folder path at the top of a pane to jump directly to that directory.</li>
-        <li><strong>Refresh:</strong> Use the global refresh button (circular arrows) in the top toolbar to reload both panes simultaneously.</li>
-    </ul>
+        <p>In this dialog, you only need to fill out the <strong>Name</strong> field as an absolute minimum requirement to create the entry. However, to successfully establish a connection later, you will also want to fill in the Host (IP or domain), Port, and User. You can also organize your tree view by assigning the server directly to a specific Folder using the dropdown menu.</p>
 
-    <h3>5.2 Smart Transfers</h3>
-    <ul>
-        <li><strong>Drag and Drop:</strong> Click and drag files or folders from one pane to the other to initiate an upload or download.</li>
-        <li><strong>Toolbar Transfers:</strong> Select items and click the Green (Upload) or Blue (Download) transfer buttons in the toolbar.</li>
-        <li><strong>Resume Transfers:</strong> If a large transfer is interrupted, select the file again and click the Yellow <strong>Fast Forward</strong> button. Scarpa will calculate the size difference and only transfer the missing bytes.</li>
-        <li><strong>Cancel:</strong> Click the Red <strong>Stop</strong> button to abort any ongoing transfer or deep search.</li>
-    </ul>
+        <h4 id="auth-tab">2.1.2 Auth Tab</h4>
+        <p>The <strong>Auth</strong> tab is where you define how Scarpa will authenticate with the remote server. You have two secure methods to choose from depending on your server's configuration:</p>
 
-    <h3>5.3 File Management & Safe Deletion</h3>
-    <ul>
-        <li><strong>Context Menu:</strong> Right-click empty space or files to Create Directories, Rename (<kbd>F2</kbd>), Copy (<kbd>Ctrl</kbd> + <kbd>C</kbd>), or Cut (<kbd>Ctrl</kbd> + <kbd>X</kbd>).</li>
-        <li><strong>Safe Trash (Local):</strong> Pressing <kbd>Delete</kbd> on a <em>local</em> file safely moves it to your operating system's Rubbish Bin.</li>
-        <li><strong>Permanent Delete:</strong> Press <kbd>Shift</kbd> + <kbd>Delete</kbd> to permanently destroy a local file. <br><em>Note: All deletions performed on the Remote Server are always permanent.</em></li>
-    </ul>
+        <div class="screenshot-container">
+            <img src="AuthenticateByPasswordOrPublicKey.png" alt="Auth Tab Dialog">
+            <div class="screenshot-caption">Configuring Password or Public Key authentication.</div>
+        </div>
 
-    <h3>5.4 Recursive Search</h3>
-    <p>Find files buried deep within large folder structures without manually clicking through them.</p>
-    <ul>
-        <li><strong>How to Search:</strong> Click the <strong>Binoculars</strong> icon in the toolbar to search the currently active pane, or right-click a specific folder and choose <strong>Search Here...</strong></li>
-        <li><strong>Results:</strong> A window will appear with matching files. Double-click any result to instantly navigate the active pane to that exact file's location.</li>
-    </ul>
+        <ul>
+            <li><strong>Password:</strong> The standard authentication method. Enter the user's password here. You can toggle the "Show Password" checkbox to verify you have typed it correctly before saving.</li>
+            <li><strong>Public Key:</strong> For secure, key-based authentication (such as RSA or ED25519). Click the file browser button to locate your private key file (e.g., a <code>.pem</code> or <code>id_rsa</code> file) on your local machine. If your private key is protected by a password, enter it into the <strong>Passphrase</strong> field below.</li>
+        </ul>
+        
+        <div class="note-box">
+            <strong>Security Note:</strong> Whether you save a standard password or a key file passphrase, both are securely encrypted by your Master Passphrase within Scarpa's local database.
+        </div>
+		<h4 id="terminal-tab">2.1.3 Terminal Tab</h4>
+        <p>The <strong>Terminal</strong> tab allows you to customize the behavior of the SSH session window and configure session logging to keep records of your work.</p>
 
-    <h2 id="automation">6. Advanced Automation & Tunneling</h2>
+        <div class="screenshot-container">
+            <img src="TerminalTab.png" alt="Terminal Tab Dialog">
+            <div class="screenshot-caption">Configuring terminal behavior and session logging.</div>
+        </div>
 
-    <h3>6.1 Startup Command Files</h3>
-    <p>Automate your workflow by having Scarpa execute commands immediately after a successful login.</p>
-    <ol>
-        <li>Create a local text file (e.g., <code>startup.txt</code>) containing the commands you want to run (one per line).</li>
-        <li>In the Server Editor, navigate to the <strong>Terminal</strong> tab.</li>
-        <li>Select your text file in the "Startup Command File" field.</li>
-    </ol>
-    <p class="note"><strong>Common Use Cases:</strong> Sourcing a virtual environment, navigating directly to a deep project directory (<code>cd /var/www/html</code>), or launching a monitoring tool (<code>htop</code>) automatically upon connect.</p>
+        <p>Here you can adjust several important background settings:</p>
+        <ul>
+            <li><strong>Scrollback Lines:</strong> Determines how many lines of history the terminal will remember. Increase this if you frequently run commands with massive text outputs and need to scroll up to read them.</li>
+            <li><strong>Encoding:</strong> Sets the character encoding. <strong>UTF-8</strong> is the modern standard and should rarely be changed, but legacy systems might require different encodings to display text correctly.</li>
+            <li><strong>Keep-Alive Interval (s):</strong> Many firewalls or servers will drop your SSH connection if you don't type anything for a while. This setting sends a silent "ping" every X seconds to keep your session perfectly alive while you read or step away.</li>
+            <li><strong>Log Session output:</strong> If you want a permanent record of what you did on the server, use the file browser button to select a save destination. Everything printed to your terminal will be saved to this text file.</li>
+            <li><strong>Append timestamp to log name:</strong> Highly recommended if you are logging. This ensures that every time you connect, a new file is created with the current date and time instead of overwriting your old logs.</li>
+        </ul>
+        <h4 id="login-actions-tab">2.1.4 Login Actions Tab</h4>
+        <p>If you connect to servers that require complex, multi-step login procedures (such as jump-servers that prompt for a secondary password, a specific user swap, or a 2FA prompt), you can fully automate the process using the <strong>Login Actions</strong> tab.</p>
 
-    <h3>6.2 Login Actions (Expect/Send)</h3>
-    <p>Handle complex authentication hurdles like secondary passwords, 2FA prompts, or legal disclaimers.</p>
-    <ol>
-        <li>In the Server Editor, go to the <strong>Login Actions</strong> tab and click <strong>Add Row</strong>.</li>
-        <li><strong>Expect:</strong> Enter the exact text the server outputs (e.g., <code>Verification code:</code>).</li>
-        <li><strong>Send:</strong> Enter the response Scarpa should type.</li>
-        <li><strong>Hide:</strong> Check this box if the "Send" text is a sensitive password. It will be masked in the UI and stripped from session logs.</li>
-    </ol>
+        <div class="screenshot-container">
+            <img src="LoginActionTab.png" alt="Login Actions Tab">
+            <div class="screenshot-caption">The main Login Actions tab showing a sequence of automated steps.</div>
+        </div>
 
-    <h3>6.3 Port Forwarding</h3>
-    <p>Tunnel traffic securely through your SSH connection via the <strong>Port Forwarding</strong> tab.</p>
-    <ul>
-        <li><strong>Local (-L):</strong> Access a service on the remote network via your local machine (e.g., routing `8080` locally to an internal database).</li>
-        <li><strong>Remote (-R):</strong> Expose a local service on your machine to the remote server.</li>
-        <li><strong>Dynamic (-D):</strong> Creates a local SOCKS5 proxy that allows you to route standard browser traffic through the remote server.</li>
-    </ul>
+        <p>This system uses a standard <em>Expect/Send</em> mechanism. You tell Scarpa to "expect" a specific string of text to appear on the terminal screen, and then automatically "send" a specific keyboard response.</p>
 
-    <h2 id="logging">7. Logging & Data Management</h2>
+        <h5 style="color: var(--primary-color); font-size: 1.1em; margin-top: 1.5em;">Adding or Editing an Action Step</h5>
+        <p>Click the <strong>Add Step</strong> button to create a new sequence, or double-click an existing step to edit it.</p>
 
-    <h3>7.1 Clean Session Logging</h3>
-    <p>Scarpa features a sophisticated logging engine perfect for troubleshooting and auditing.</p>
-    <ul>
-        <li><strong>Enable Logging:</strong> In the <strong>Terminal</strong> tab, check "Enable Logging" and select an output file path.</li>
-        <li><strong>Append vs. Overwrite:</strong> Choose whether to add new session data to the end of an existing file (historical tracking) or wipe it clean every time you connect (current state debugging).</li>
-        <li><strong>"Clean Text" Technology:</strong> Scarpa automatically strips out terminal control codes (ANSI colors, window title updates) in real-time, resulting in clean, human-readable text perfect for use with <code>grep</code>.</li>
-    </ul>
+        <div class="screenshot-container">
+            <img src="loginActionAddStep.png" alt="Add Login Action Step">
+            <div class="screenshot-caption">Configuring a new Expect/Send sequence.</div>
+        </div>
 
-    <h3>7.2 Import / Export</h3>
-    <p>Backup or share your server configurations via the <strong>File</strong> menu.</p>
-    <ul>
-        <li><strong>JSON Export:</strong> Saves a plaintext <code>.json</code> file. <em>Warning: Passwords are exposed in plain text.</em></li>
-        <li><strong>GPG Export:</strong> Saves an encrypted <code>.json.gpg</code> file. You will be prompted for your Master Passphrase to encrypt it, allowing you to safely move your configuration between computers.</li>
-    </ul>
+        <p>When configuring a step, you will need to define three parameters:</p>
+        <ul>
+            <li><strong>Expect String:</strong> The exact text the server will print to the terminal (e.g., <code>Password:</code> or <code>Verification code:</code>). This is case-sensitive!</li>
+            <li><strong>Send String:</strong> The text Scarpa should automatically type as a response. <em>Note: Scarpa automatically presses "Enter" after sending this text.</em></li>
+            <li><strong>Timeout (s):</strong> How many seconds Scarpa should wait for the "Expect" string to appear before giving up and returning keyboard control to you.</li>
+        </ul>
 
-    <h2 id="appearance">8. Appearance & Customization</h2>
-    
-    <h3>8.1 Global Defaults</h3>
-    <p>Navigate to <strong>File -> Default Settings...</strong> to set your baseline preferences. You can choose a default Font, Text Color, Background Color, and built-in Palette (e.g., <em>Solarized</em>, <em>Tango</em>, <em>GNOME</em>). Any newly created server will automatically inherit these settings.</p>
+        <div class="screenshot-container">
+            <img src="LoginActionEditStepAndHideSend.png" alt="Hide Send Input">
+            <div class="screenshot-caption">Using the "Hide Send Input" feature to mask passwords.</div>
+        </div>
+		
+        <p><strong>Security Tip:</strong> If your "Send String" is a static secondary password or PIN, check the <strong>Hide Send Input</strong> box. This will replace your text with dots on the screen so no one looking over your shoulder can read it. Just like your main server passwords, this hidden string is securely encrypted in your local database.</p>
+		<h4 id="port-forwarding-tab">2.1.5 Port Forwarding Tab</h4>
+        <p>SSH tunneling is an incredibly powerful feature, but remembering the exact command-line flags can be tedious. The <strong>Port Forwarding</strong> tab allows you to configure these tunnels visually. Any active rules you enable here will automatically establish the moment you connect to the server.</p>
 
-    <h3>8.2 Per-Server Customization</h3>
-    <p>You can override global settings on a per-server basis in the <strong>Appearance</strong> tab of the Server Editor. If you ever want to revert a highly customized server back to standard, click the <strong>Reset to Defaults</strong> button.</p>
+        <div class="screenshot-container">
+            <img src="PortFowardingTab.png" alt="Port Forwarding Tab">
+            <div class="screenshot-caption">The main Port Forwarding tab showing a configured Local rule.</div>
+        </div>
 
-<h2 id="installation">9. Installation & Troubleshooting</h2>
-    <p>Scarpa Connection Manager is officially hosted on an Ubuntu PPA for the most flexible installation, and the Canonical Snap Store for users who prefer sandboxed containers.</p>
+        <h5 style="color: var(--primary-color); font-size: 1.1em; margin-top: 1.5em;">Adding a Forwarding Rule</h5>
+        <p>Click the <strong>Add Rule</strong> button to open the configuration dialog. From here, you can define exactly how traffic should be routed.</p>
 
-    <h3>🚀 Install via Ubuntu PPA (Recommended)</h3>
-    <p>The recommended way to install Scarpa on Ubuntu is via our official Personal Package Archive (PPA). Because this uses standard Debian packaging, the application has unrestricted access to your host file system. This is highly recommended if you plan to save session logs to system directories like <code>/tmp</code> or custom external drives.</p>
-    
-    <p>Open your terminal and run the following commands:</p>
-    <pre><code>sudo add-apt-repository ppa:larre-b-larsson/scarpa-connection-manager
-sudo apt update
-sudo apt install scarpa-connection-manager</code></pre>
+        <div class="screenshot-container">
+            <img src="PortForwardingAddRule.png" alt="Add Port Forwarding Rule">
+            <div class="screenshot-caption">Configuring a new Port Forwarding rule.</div>
+        </div>
+        
+        <p>The most important decision when creating a rule is selecting the correct <strong>Type</strong> from the dropdown menu:</p>
+        
+        <div class="screenshot-container">
+            <img src="PortForwardingRulesTypes.png" alt="Port Forwarding Rule Types">
+            <div class="screenshot-caption">Choosing between Local, Remote, and Dynamic forwarding.</div>
+        </div>
 
-    <h3>📦 Alternative: Install via Snap Store</h3>
-    <p>If you prefer containerized applications, Scarpa is also available in the official Snap Store. The Snap package comes pre-packaged with all background tools (like specific versions of SSH and Expect) so they don't clutter your main system.</p>
-    <p><em>Note: Because the Snap package runs in a strict, isolated container, the application is restricted from writing to certain parts of your host file system.</em></p>
-    
-    <p>To install the Snap version, run:</p>
-    <pre><code>sudo snap install connection-manager-scarpa</code></pre>
-    
-    <p><strong>Launching the App:</strong> Once installed, you can launch the application from your desktop's main application menu, or by typing the application name into your terminal.</p>
+        <ul>
+            <li><strong>Local (L):</strong> Forwards traffic from a port on your <em>local Ubuntu machine</em>, through the SSH tunnel, to a specific address and port on the remote network. (Useful for accessing a remote database as if it were running securely on your own computer).</li>
+            <li><strong>Remote (R):</strong> The exact reverse of Local. It opens a port on the <em>remote SSH server</em> and forwards traffic back through the tunnel to your local machine.</li>
+            <li><strong>Dynamic (D):</strong> Creates a local SOCKS proxy server. You only need to specify a local Bind Port. Applications (like your web browser) can be configured to use this SOCKS proxy, automatically routing all their traffic securely through the SSH server.</li>
+        </ul>
+		<h4 id="appearance-tab">2.1.6 Appearance Tab</h4>
+        <p>The <strong>Appearance</strong> tab allows you to customize the visual presentation of the SSH terminal for this specific server. This is an excellent way to visually distinguish between different environments (e.g., setting a dark red background for Production servers, and a standard black background for Development servers).</p>
 
+        <div class="screenshot-container">
+            <img src="AppearanceTab.png" alt="Appearance Tab">
+            <div class="screenshot-caption">The main Appearance configuration tab.</div>
+        </div>
 
-    <p class="note" style="margin-top: 30px;">© 2026 Scarpa Connection Manager. Built with Python & GTK3. Riposa in pace, Aquila di Filottrano. Sarai sempre con noi!</p>
+        <h5 style="color: var(--primary-color); font-size: 1.1em; margin-top: 1.5em;">Pre-built Color Schemes</h5>
+        <p>If you want a cohesive, professionally designed terminal look, you can select one of the built-in presets from the <strong>Color Scheme</strong> dropdown. This includes popular developer themes like Tango, Solarized, and Dracula.</p>
+
+        <div class="screenshot-container">
+            <img src="AppearanceColorSchemes.png" alt="Color Schemes Dropdown">
+            <div class="screenshot-caption">Selecting a pre-built color scheme.</div>
+        </div>
+
+        <h5 style="color: var(--primary-color); font-size: 1.1em; margin-top: 1.5em;">Custom Colors & Palettes</h5>
+        <p>If you prefer full control, you can define exactly how you want the terminal to look by adjusting the Custom Palette or clicking directly on the Text and Background color buttons.</p>
+
+        <div style="display: flex; gap: 10px; margin: 20px 0;">
+            <div class="screenshot-container" style="flex: 1; margin: 0;">
+                <img src="AppearancePickColour.png" alt="System Color Picker">
+                <div class="screenshot-caption">Using the system color picker for exact shades.</div>
+            </div>
+            <div class="screenshot-container" style="flex: 1; margin: 0;">
+                <img src="AppearancePalettes.png" alt="Terminal Color Palette">
+                <div class="screenshot-caption">Adjusting the specific 16-color ANSI palette.</div>
+            </div>
+        </div>
+
+        <h5 style="color: var(--primary-color); font-size: 1.1em; margin-top: 1.5em;">Custom Typography</h5>
+        <p>Finally, you can override the system's default terminal font. Clicking the <strong>Terminal Font</strong> button will open the standard Ubuntu font selection dialog, allowing you to choose your preferred monospace font and size for maximum readability.</p>
+
+        <div class="screenshot-container">
+            <img src="AppearanceSelectFont.png" alt="Font Selection Dialog">
+            <div class="screenshot-caption">Selecting a custom monospace font.</div>
+        </div>
+	</section>
+
+    <section id="organizing">
+        <h2>3. Organizing Folders & Servers</h2>
+        <p>If you manage dozens or hundreds of servers, organization is critical. Scarpa allows you to build deeply nested folder structures to keep your environments perfectly sorted.</p>
+
+        <h3 id="adding-managing">3.1 Adding & Managing Items</h3>
+        <p>You can create, edit, and delete both Folders and Servers using two primary methods:</p>
+
+        <h4>The Top Menu Bar</h4>
+        <p>The <strong>Folders</strong> and <strong>Servers</strong> menus at the top of the window provide quick access to all management actions. If you have a specific folder selected in your tree, adding a new item via these menus will automatically place it inside that selected folder.</p>
+        
+        <div style="display: flex; gap: 10px; margin: 20px 0;">
+            <div class="screenshot-container" style="flex: 1; margin: 0;">
+                <img src="FolderActionViaTopbarMenu.png" alt="Folder Menu">
+                <div class="screenshot-caption">Managing folders via the Topbar Menu.</div>
+            </div>
+            <div class="screenshot-container" style="flex: 1; margin: 0;">
+                <img src="ServerActionsViaTopbarMenu.png" alt="Server Menu">
+                <div class="screenshot-caption">Managing servers via the Topbar Menu.</div>
+            </div>
+        </div>
+
+        <h4>The Right-Click Context Menu</h4>
+        <p>For a faster workflow, you can right-click directly on any item in your Session Tree. The context menu dynamically changes depending on whether you right-click a Folder or a Server, giving you instant access to edit, delete, or add new items inside that specific location.</p>
+        
+        <div style="display: flex; gap: 10px; margin: 20px 0;">
+            <div class="screenshot-container" style="flex: 1; margin: 0;">
+                <img src="FoldeActionViaRightClick.png" alt="Folder Right Click Menu">
+                <div class="screenshot-caption">The Folder context menu.</div>
+            </div>
+            <div class="screenshot-container" style="flex: 1; margin: 0;">
+                <img src="ServerActionViaRightClick.png" alt="Server Right Click Menu">
+                <div class="screenshot-caption">The Server context menu.</div>
+            </div>
+        </div>
+
+        <h3 id="drag-drop">3.2 Drag and Drop</h3>
+        <p>You do not need to manually edit items to move them around. Scarpa supports full native drag-and-drop mechanics to reorganize your structure on the fly.</p>
+        
+        <div style="display: flex; gap: 10px; margin: 20px 0;">
+            <div class="screenshot-container" style="flex: 1; margin: 0;">
+                <img src="DragAdnDropFolders.png" alt="Drag and Drop Folders">
+                <div class="screenshot-caption">Dragging a folder into a new location.</div>
+            </div>
+            <div class="screenshot-container" style="flex: 1; margin: 0;">
+                <img src="DragAndDropServers.png" alt="Drag and Drop Servers">
+                <div class="screenshot-caption">Dragging a server into a different folder.</div>
+            </div>
+        </div>
+
+        <h3 id="inline-renaming">3.3 Inline Renaming</h3>
+        <p>To quickly rename an item without opening the full configuration window, simply select the folder or server and trigger the rename action (via the right-click menu, the top menu, or by pressing your system's rename shortcut, like F2). The text will become editable directly within the tree view!</p>
+        
+        <div style="display: flex; gap: 10px; margin: 20px 0;">
+            <div class="screenshot-container" style="flex: 1; margin: 0;">
+                <img src="InlineChageOfFolderName.png" alt="Inline Folder Rename">
+                <div class="screenshot-caption">Editing a folder name directly in the tree view.</div>
+            </div>
+            <div class="screenshot-container" style="flex: 1; margin: 0;">
+                <img src="InlineChangeOfServerName.png" alt="Inline Server Rename">
+                <div class="screenshot-caption">Editing a server name directly in the tree view.</div>
+            </div>
+        </div>
+    </section>
+
+    <section id="import-export">
+        <h2>4. Importing & Exporting Data</h2>
+        <p>Scarpa makes it easy to migrate your data in and out of the application securely. Whether you are moving from another operating system or backing up your configurations, the Import and Export tools have you covered.</p>
+
+        <h3 id="importing">4.1 Importing from other Apps</h3>
+        <p>If you are migrating to Scarpa from Windows or another Linux connection manager, you do not have to recreate all your servers manually. Scarpa can automatically parse and import existing server lists.</p>
+        
+        <div class="screenshot-container">
+            <img src="Import.png" alt="Import Dialog">
+            <div class="screenshot-caption">Importing configurations from external tools like MobaXterm or SecureCRT.</div>
+        </div>
+
+        <p>To import your connections:</p>
+        <ol>
+            <li>Go to the Top Menu Bar and select <strong>File -> Import</strong>.</li>
+            <li>In the dialog window, select the <strong>Source Format</strong> from the dropdown menu (currently supporting exports from MobaXterm, SecureCRT, and PuTTY).</li>
+            <li>Use the file browser button to locate the export file (such as an XML or INI file) generated by your old application.</li>
+            <li>Click <strong>Import</strong>. Scarpa will automatically extract the folders and servers, encrypt them using your Master Passphrase, and instantly display them in your Session Tree.</li>
+        </ol>
+
+        <h3 id="exporting">4.2 Exporting Backups</h3>
+        <p>Because Scarpa uses strict local encryption with no background cloud-syncing, it is highly recommended to regularly back up your server list yourself. The Export tool provides options for both maximum security and portability.</p>
+        
+        <div class="screenshot-container">
+            <img src="ExportCleartxtorEncrypted.png" alt="Export Options">
+            <div class="screenshot-caption">Exporting data with Plaintext or GPG encryption options.</div>
+        </div>
+
+        <p>To create a backup, navigate to <strong>File -> Export</strong>. You have two format choices depending on your needs:</p>
+        <ul>
+            <li><strong>GPG Encrypted (.gpg):</strong> (Highly Recommended) This bundles your entire database and encrypts it using standard GPG encryption. You will be prompted to create a specific password for this file. Because it is securely encrypted, you can safely store this backup file in cloud services like Google Drive or Dropbox without worrying about your server credentials being compromised.</li>
+            <li><strong>Plaintext JSON (.json):</strong> This exports your entire folder structure, server IPs, and usernames into a highly readable JSON file. <strong>Warning:</strong> For security reasons, this option will <em>strip out all your passwords</em>. This format is primarily useful if you want to write custom scripts to parse your server list, or if you need to bulk-edit server names in a text editor before re-importing.</li>
+        </ul>
+    </section>
+
+	<section id="default-settings">
+        <h2>5. Global Default Settings</h2>
+        <p>If you find yourself repeatedly setting the same terminal colors, fonts, or scrollback buffers for every new server you create, you can save a significant amount of time by configuring your <strong>Global Default Settings</strong>.</p>
+
+        <p>To access this menu, click on <strong>File -> Default Settings</strong> in the Top Menu Bar.</p>
+        
+        <div class="screenshot-container">
+            <img src="SetWhatToBeTheDefaultSetting.png" alt="Default Settings Dialog">
+            <div class="screenshot-caption">Configuring the global baseline settings for the application.</div>
+        </div>
+
+        <p>This configuration window allows you to define your preferred baseline parameters. These global settings interact with your connections in two specific ways:</p>
+        
+        <ol>
+            <li><strong>Adding New Servers:</strong> Every time you create a brand new Server Connection, it will automatically inherit these exact values right out of the box, saving you from having to visit the Appearance tab manually.</li>
+            <li><strong>Resetting Existing Servers:</strong> If you are modifying an existing server's <strong>Appearance</strong> tab and want to scrap your custom changes, clicking the <strong>Reset to Defaults</strong> button will instantly pull the values you defined here in this global menu.</li>
+        </ol>
+    </section>
+	
+	<section id="change-password">
+        <h2>6. Changing the Master Passphrase</h2>
+        <p>Security is an ongoing process. If you ever need to update your encryption key, Scarpa makes it easy to securely rotate your Master Passphrase without losing any of your saved configurations.</p>
+
+        <p>To initiate this process, click on <strong>File -> Change Passphrase</strong> in the Top Menu Bar.</p>
+        
+        <div style="display: flex; gap: 10px; margin: 20px 0;">
+            <div class="screenshot-container" style="flex: 1; margin: 0;">
+                <img src="ChangePasswordCurrentPassword.png" alt="Enter Current Passphrase">
+                <div class="screenshot-caption">Step 1: Authenticate with your current passphrase.</div>
+            </div>
+            <div class="screenshot-container" style="flex: 1; margin: 0;">
+                <img src="ChangePasswordEnterNewAndConfirm.png" alt="Enter New Passphrase">
+                <div class="screenshot-caption">Step 2: Set and confirm your new master passphrase.</div>
+            </div>
+        </div>
+
+        <p>The process works in two secure steps to prevent accidental lockouts:</p>
+        
+        <ol>
+            <li><strong>Verification:</strong> First, you will be prompted to enter your <em>current</em> passphrase to verify your identity.</li>
+            <li><strong>Rotation:</strong> Once verified, a second dialog will appear asking you to type and confirm your <em>new</em> passphrase.</li>
+        </ol>
+
+        <div class="note-box">
+            <strong>Behind the Scenes:</strong> When you successfully complete this process, Scarpa instantly decrypts your database in memory, generates a brand new cryptographic salt, and securely re-encrypts all your stored servers with the new passphrase. Your old passphrase will immediately stop working.
+        </div>
+    </section>
+	
+	<section id="connecting">
+        <h2>7. Connecting to Servers</h2>
+        <p>Once your servers are configured, establishing a connection is just a click away. Scarpa provides direct access to both standard SSH terminal sessions and command-line (CLI) SFTP sessions.</p>
+
+        <h3 id="how-to-connect">7.1 Initiating a Connection</h3>
+        <p>There are two primary ways to launch a session with a saved server:</p>
+
+        <div style="display: flex; gap: 10px; margin: 20px 0;">
+            <div class="screenshot-container" style="flex: 1; margin: 0;">
+                <img src="ConnectActionViaTopbarMenu.png" alt="Connect via Top Menu">
+                <div class="screenshot-caption">Connecting via the top menu bar.</div>
+            </div>
+            <div class="screenshot-container" style="flex: 1; margin: 0;">
+                <img src="ServerActionViaRightClick.png" alt="Connect via Right Click">
+                <div class="screenshot-caption">Connecting directly via the right-click context menu.</div>
+            </div>
+        </div>
+
+        <ul>
+            <li><strong>Via the Topbar Menu:</strong> Select your server in the tree, then click <strong>Connect</strong> in the top menu bar to choose your session type.</li>
+            <li><strong>Via Right-Click:</strong> (Highly Recommended) Simply right-click the server directly in your tree and choose your desired connection type from the context menu. This is generally the fastest workflow.</li>
+        </ul>
+
+        <h3 id="ssh-and-cli-sftp">7.2 SSH & CLI SFTP Sessions</h3>
+        <p>When you initiate a connection, Scarpa handles all the background authentication—seamlessly passing your decrypted passwords or key files—and drops you straight into the terminal.</p>
+        
+        <ul>
+            <li><strong>Connect SSH:</strong> This opens a standard secure shell terminal window, giving you full interactive command-line access to the remote machine. Any automated Login Actions, custom colors, fonts, or port forwarding rules you defined for this server will automatically activate the moment this window opens.</li>
+            <li><strong>Connect SFTP (CLI):</strong> If you prefer to manually type your file transfer commands, this option opens a terminal dedicated to the standard interactive SFTP prompt. Here you can execute raw commands like <code>get</code>, <code>put</code>, <code>ls</code>, and <code>cd</code> directly against the remote filesystem.</li>
+        </ul>
+        <h3 id="sftp-gui">7.3 Visual SFTP GUI</h3>
+        <p>While command-line tools are great for quick tasks, managing large file transfers or navigating complex directories is often easier with a visual interface. To launch this mode, right-click your server and select <strong>Connect SFTP (GUI)</strong>.</p>
+
+        <div class="screenshot-container">
+            <img src="SFTPGUIMainPage.png" alt="SFTP GUI Main Interface">
+            <div class="screenshot-caption">The dual-pane visual SFTP interface for managing file transfers.</div>
+        </div>
+
+        <p>The SFTP GUI features a familiar, highly efficient dual-pane layout designed to make file operations as seamless as possible:</p>
+        
+        <ul>
+            <li><strong>Local Machine (Left Pane):</strong> Displays the files and folders currently on your own Ubuntu computer.</li>
+            <li><strong>Remote Server (Right Pane):</strong> Displays the filesystem of the connected SSH/SFTP server.</li>
+            <li><strong>Intuitive Navigation:</strong> Both panes feature quick-access pathbars at the top, allowing you to jump instantly to specific directories or navigate up the tree using the "Up" directory buttons.</li>
+            <li><strong>Drag & Drop Transfers:</strong> To upload or download files, simply click and drag items from one pane to the other.</li>
+            <li><strong>Transfer Queue (Bottom):</strong> The bottom panel provides real-time monitoring of your active file transfers, showing current progress, successful completions, and any potential errors.</li>
+        </ul>
+		<h4 id="sftp-refresh">7.3.1 Refresh</h4>
+        <p>At the very top of the SFTP interface sits the quick-action toolbar. Let's look at the first control on the left:</p>
+
+        <div class="screenshot-container">
+            <img src="SFTPGUI_Refresh.png" alt="SFTP Toolbar">
+            <div class="screenshot-caption">The SFTP quick-action toolbar.</div>
+        </div>
+
+        <ul>
+            <li><strong>Refresh:</strong> This button simultaneously refreshes the file directory structures on both the Local (left) and Server (right) panes. This is incredibly useful to verify that a transfer completed successfully, or to see new log files created by background processes on the server.</li>
+        </ul>
+		<h4 id="sftp-add-folder">7.3.2 Add Folder</h4>
+        <p>Organizing your files often requires creating new directories. Scarpa provides two quick ways to create a new folder within whichever pane (Local or Server) you currently have active:</p>
+
+        <div style="display: flex; gap: 10px; margin: 20px 0;">
+            <div class="screenshot-container" style="flex: 1; margin: 0;">
+                <img src="SFTPGUI_CreateMapIcon.png" alt="Create Folder via Toolbar">
+                <div class="screenshot-caption">Method 1: Using the top toolbar button.</div>
+            </div>
+            <div class="screenshot-container" style="flex: 1; margin: 0;">
+                <img src="SFTPGUI_CreateMapRightClickpng.png" alt="Create Folder via Right-Click">
+                <div class="screenshot-caption">Method 2: Using the right-click context menu.</div>
+            </div>
+        </div>
+
+        <ul>
+            <li><strong>Via the Toolbar:</strong> Click the <strong>Create Folder</strong> icon (the folder with a plus sign) in the top action bar.</li>
+            <li><strong>Via Right-Click:</strong> Simply right-click anywhere in the empty space of your active file list and select <strong>Create Folder</strong>.</li>
+        </ul>
+        
+        <p>Both methods will prompt you for the new folder's name and instantly create it in your current active directory.</p>
+		<h4 id="sftp-upload-download">7.3.3 Upload & Download</h4>
+        <p>The core feature of the SFTP GUI is transferring files between your local machine and the remote server. Scarpa provides three highly intuitive ways to move your data:</p>
+
+        <div style="display: flex; gap: 10px; margin: 20px 0;">
+            <div class="screenshot-container" style="flex: 1; margin: 0;">
+                <img src="SFTPGUI_UL_Icon.png" alt="Upload Icon">
+                <div class="screenshot-caption">The Upload arrow (Local to Server).</div>
+            </div>
+            <div class="screenshot-container" style="flex: 1; margin: 0;">
+                <img src="SFTPGUI_DL_Icon.png" alt="Download Icon">
+                <div class="screenshot-caption">The Download arrow (Server to Local).</div>
+            </div>
+        </div>
+
+        <ul>
+            <li><strong>Via Toolbar Arrows:</strong> The arrows are context-sensitive based on what you have selected. If you select a file or folder in the Local (left) pane, clicking the Right Arrow icon will <em>Upload</em> it to the server. Conversely, selecting an item in the Server (right) pane and clicking the Left Arrow icon will <em>Download</em> it to your local machine.</li>
+            <li><strong>Via Keyboard Shortcuts:</strong> For maximum speed, you can use standard OS keyboard shortcuts. Select an item and press <strong>Ctrl+C</strong> (Copy) or <strong>Ctrl+X</strong> (Cut), then click anywhere inside the opposite pane and press <strong>Ctrl+V</strong> (Paste).</li>
+            <li><strong>Via Drag and Drop:</strong> The most visual method! Click and hold any file or folder, drag it across the screen into the opposite pane, and release. <em>Advanced Tip:</em> You can also drag items directly onto specific parent folders in the breadcrumb pathbar to drop them exactly where you need them!</li>
+        </ul>
+
+        <div style="display: flex; gap: 10px; margin: 20px 0;">
+            <div class="screenshot-container" style="flex: 1; margin: 0;">
+                <img src="SFTPGUI_DragAndDrop.png" alt="Standard Drag and Drop">
+                <div class="screenshot-caption">Standard Transfer: Dragging into the opposite pane.</div>
+            </div>
+            <div class="screenshot-container" style="flex: 1; margin: 0;">
+                <img src="SFTPGUI_DragAndDropToBreadcrum.png" alt="Breadcrumb Drag and Drop">
+                <div class="screenshot-caption">Advanced Transfer: Dragging directly onto the breadcrumb path.</div>
+            </div>
+        </div>
+		<h4 id="sftp-stop-resume">7.3.4 Stop & Resume Transfers</h4>
+        <p>When transferring massive directories or dealing with unstable internet connections, you may need to manually intervene in the file transfer process. The SFTP toolbar provides dedicated controls for managing your active transfer queue.</p>
+
+        <div class="screenshot-container">
+            <img src="SFTPGUI_StopAndResume.png" alt="Stop and Resume Icons">
+            <div class="screenshot-caption">The Resume (orange double-arrows) and Stop (red X) buttons on the SFTP toolbar.</div>
+        </div>
+
+        <ul>
+            <li><strong>Stop (Red X):</strong> Instantly aborts the currently active transfer. This is incredibly useful if you realize you accidentally dragged the wrong massive folder and want to cancel the operation before it finishes copying.</li>
+            <li><strong>Resume (Double Arrows):</strong> If a transfer was interrupted (either by manually stopping it, or due to a dropped network connection), you do not have to start over. Select the partially transferred file and click this button to resume the transfer exactly from where it left off!</li>
+        </ul>
+		<h4 id="sftp-search">7.3.5 Search Recursively</h4>
+        <p>Finding a specific file buried deep within a complex directory structure can be tedious. The SFTP GUI includes a powerful recursive search tool to handle the heavy lifting for you.</p>
+
+        <div class="screenshot-container">
+            <img src="SFTPGUI_SearchRecursive.png" alt="Search Icon">
+            <div class="screenshot-caption">Step 1: Click the Search icon (magnifying glass) on the toolbar.</div>
+        </div>
+
+        <p>The search function is context-sensitive; it operates on whichever pane (Local or Server) you currently have active, and searches through your current directory and <em>all</em> subfolders beneath it.</p>
+
+        <div style="display: flex; gap: 10px; margin: 20px 0;">
+            <div class="screenshot-container" style="flex: 1; margin: 0;">
+                <img src="SFTPGUI_SearchRecursiveInput.png" alt="Search Input Dialog">
+                <div class="screenshot-caption">Step 2: Enter your search term.</div>
+            </div>
+            <div class="screenshot-container" style="flex: 1; margin: 0;">
+                <img src="SFTPGUI_SearchRecursiveResult.png" alt="Search Results Dialog">
+                <div class="screenshot-caption">Step 3: Double-click a result to navigate there instantly.</div>
+            </div>
+        </div>
+
+        <ul>
+            <li><strong>Input:</strong> Type a partial or exact filename into the prompt and click Search.</li>
+            <li><strong>Results:</strong> A new window will populate with all matches, displaying their full file paths.</li>
+            <li><strong>Quick Navigation:</strong> If you find the file you were looking for, simply <strong>double-click</strong> it in the results list! Scarpa will instantly navigate your active pane directly to that specific folder so you can begin working with the file immediately.</li>
+        </ul>
+		<h4 id="sftp-open-files">7.3.6 Open Default File Types</h4>
+        <p>A major convenience feature of the SFTP GUI is its seamless integration with your local operating system. You do not always need to manually download a file just to view or edit it.</p>
+
+        <div class="screenshot-container">
+            <img src="SFTPGUI_OpenDefaultFileTypes.png" alt="Opening a file in its default application">
+            <div class="screenshot-caption">Double-clicking a text file instantly opens it in the system's default text editor.</div>
+        </div>
+
+        <p>If you <strong>double-click</strong> any recognized file (such as a <code>.txt</code> document, a <code>.png</code> image, or a <code>.json</code> config file) within either the Local or Server pane, Scarpa will automatically launch it using whatever default application your computer has assigned to that specific file type.</p>
+        
+        <div class="note-box">
+            <strong>Behind the Scenes:</strong> If you double-click a file located on the <em>remote server</em>, Scarpa automatically downloads it to a secure temporary folder in the background and opens it for you, saving you several manual workflow steps!
+        </div>
+	
+    </section>
+	<section id="installation">
+        <h2>8. Installation & Troubleshooting</h2>
+        <p>Scarpa Connection Manager is officially hosted on an Ubuntu PPA for the most flexible installation, and the Canonical Snap Store for users who prefer sandboxed containers.</p>
+
+        <h3 style="display: flex; align-items: center; gap: 8px;">🚀 Install via Ubuntu PPA (Recommended)</h3>
+        <p>The recommended way to install Scarpa on Ubuntu is via our official Personal Package Archive (PPA). Because this uses standard Debian packaging, the application has unrestricted access to your host file system. This is highly recommended if you plan to save session logs to system directories like <code>/tmp</code> or custom external drives.</p>
+        
+        <p>Open your terminal and run the following commands:</p>
+        <div style="background-color: #f4f5f5; padding: 15px; border-radius: 6px; border: 1px solid #e1e4e8; margin-bottom: 25px; font-family: monospace; color: #d73a49;">
+            sudo add-apt-repository ppa:larre-b-larsson/scarpa-connection-manager<br>
+            sudo apt update<br>
+            sudo apt install scarpa-connection-manager
+        </div>
+
+        <h3 style="display: flex; align-items: center; gap: 8px;">📦 Alternative: Install via Snap Store</h3>
+        <p>If you prefer containerized applications, Scarpa is also available in the official Snap Store. The Snap package comes pre-packaged with all background tools (like specific versions of SSH and Expect) so they don't clutter your main system.</p>
+        
+        <p><em>Note: Because the Snap package runs in a strict, isolated container, the application is restricted from writing to certain parts of your host file system.</em></p>
+        
+        <p>To install the Snap version, run:</p>
+        <div style="background-color: #f4f5f5; padding: 15px; border-radius: 6px; border: 1px solid #e1e4e8; margin-bottom: 25px; font-family: monospace; color: #d73a49;">
+            sudo snap install connection-manager-scarpa
+        </div>
+
+        <p><strong>Launching the App:</strong> Once installed, you can launch the application from your desktop's main application menu, or by typing the application name into your terminal.</p>
+        
+        <div style="background-color: #f0f7ff; border-left: 4px solid #0366d6; padding: 15px; margin-top: 40px; border-radius: 0 4px 4px 0; font-style: italic; color: #586069;">
+            © 2026 Scarpa Connection Manager. Built with Python & GTK3. Riposa in pace, Aquila di Filottrano. Sarai sempre con noi!
+        </div>
+    </section>
+	
+	
+	
+	
+    <footer style="text-align: center; margin-top: 50px; padding-top: 20px; border-bottom: 10px; border-top: 1px solid #ddd; color: #7f8c8d; font-size: 0.9em;">
+        <p>© 2026 Scarpa Connection Manager. Built with Python & GTK3.</p>
+        <p><em>Riposa in pace, Aquila di Filottrano. Sarai sempre con noi!</em></p>
+    </footer>
+
+</div>
 
 </body>
 </html>
