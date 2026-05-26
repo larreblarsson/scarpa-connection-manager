@@ -1,6 +1,6 @@
 name: connection-manager-scarpa
 base: core22                           
-version: '1.2.22-25'
+version: '1.2.22-26'
 summary: A slimmed down SSH/SFTP client and connection manager including a SFTP GUI
 description: |
   **SCARPA Connection Manager**  is a SSH client desktop application designed for sysadmins, developers, and power users who need to logically organize and securely manage hundreds of remote servers.
@@ -55,10 +55,10 @@ parts:
       - gir1.2-gtk-3.0
       - gir1.2-vte-2.91
       - python3-paramiko
-      - gnupg1                         
-      - expect
+      - python3-pexpect  # <--- ADD THIS
+      - gnupg1
       - openssh-client
-      - tcl
+      - tcl      
       
     organize:
       data/icons/hicolor/: usr/share/icons/hicolor/

@@ -8,7 +8,7 @@ Homepage: https://github.com/larreblarsson/SCARPA_Connection_Manager
 
 Package: scarpa-connection-manager
 Architecture: all
-Depends: ${misc:Depends}, python3, python3-gi, gir1.2-gtk-3.0, gir1.2-vte-2.91, python3-paramiko, expect, gnupg, openssh-client
+Depends: ${misc:Depends}, python3, python3-gi, gir1.2-gtk-3.0, gir1.2-vte-2.91, python3-paramiko, python3-pexpect, gnupg, openssh-client
 Description: SCARPA Connection Manager
  A GTK-based SSH/SFTP manager that provides a user-friendly interface
  for managing connections. Includes terminal integration and file transfer.

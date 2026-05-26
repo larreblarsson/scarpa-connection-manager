@@ -25,6 +25,7 @@ import traceback
 import time
 import warnings
 import urllib.parse
+import pexpect
 
 from datetime import datetime
 
@@ -2537,11 +2538,23 @@ class PassphraseInputDialog(Gtk.Dialog):
         lbl_prompt.set_halign(Gtk.Align.START)
         box.pack_start(lbl_prompt, False, False, 0)
 
-        # Passphrase input entry (PRE-FILL LOGIC ADDED HERE)
+        # Helper function to toggle the eye icon and visibility
+        def on_pw_icon_press(entry, icon_pos, event):
+            if icon_pos == Gtk.EntryIconPosition.SECONDARY:
+                is_visible = entry.get_visibility()
+                entry.set_visibility(not is_visible)
+                new_icon = "view-conceal-symbolic" if not is_visible else "view-reveal-symbolic"
+                entry.set_icon_from_icon_name(Gtk.EntryIconPosition.SECONDARY, new_icon)
+
+        # Passphrase input entry
         self.entry_pass = Gtk.Entry(visibility=False, primary_icon_name="security-high")
         if prefill_passphrase:
             self.entry_pass.set_text(prefill_passphrase)
         self.entry_pass.set_activates_default(True)
+        
+        self.entry_pass.set_icon_from_icon_name(Gtk.EntryIconPosition.SECONDARY, "view-reveal-symbolic")
+        self.entry_pass.set_icon_tooltip_text(Gtk.EntryIconPosition.SECONDARY, "Show/Hide Password")
+        self.entry_pass.connect("icon-press", on_pw_icon_press)
         box.pack_start(self.entry_pass, False, False, 5)
 
         # Confirmation field
@@ -2550,15 +2563,25 @@ class PassphraseInputDialog(Gtk.Dialog):
             lbl_confirm = Gtk.Label(label=confirm_text)
             lbl_confirm.set_halign(Gtk.Align.START)
             box.pack_start(lbl_confirm, False, False, 0)
+            
             self.entry_confirm = Gtk.Entry(visibility=False, primary_icon_name="security-high")
             self.entry_confirm.set_activates_default(True)
+            
+            self.entry_confirm.set_icon_from_icon_name(Gtk.EntryIconPosition.SECONDARY, "view-reveal-symbolic")
+            self.entry_confirm.set_icon_tooltip_text(Gtk.EntryIconPosition.SECONDARY, "Show/Hide Password")
+            self.entry_confirm.connect("icon-press", on_pw_icon_press)
             box.pack_start(self.entry_confirm, False, False, 5)
 
-        # Remember Me Checkbox (PRE-CHECK LOGIC ADDED HERE)
+        # Remember Me Checkbox
         self.chk_remember = None
         if show_remember_me and HAS_SECRET:
             self.chk_remember = Gtk.CheckButton(label="Remember password")
             self.chk_remember.set_active(remember_me_active)
+            
+            # --- NEW: Connect the warning popup ---
+            self.chk_remember.connect("toggled", self.on_remember_toggled)
+            # --------------------------------------
+            
             box.pack_start(self.chk_remember, False, False, 5)
 
         # Retry error message
@@ -2570,7 +2593,29 @@ class PassphraseInputDialog(Gtk.Dialog):
         box.pack_start(self.lbl_retry_msg, False, False, 5)
 
         self.show_all()
- 
+        
+    def on_remember_toggled(self, widget):
+        if widget.get_active():
+            # Create a warning dialog (FIXED GTK DEPRECATION WARNING)
+            warning_dlg = Gtk.MessageDialog(
+                transient_for=self,
+                modal=True,
+                destroy_with_parent=True,
+                message_type=Gtk.MessageType.WARNING,
+                buttons=Gtk.ButtonsType.OK_CANCEL,
+                text="Security Warning"
+            )
+            warning_dlg.format_secondary_text(
+                "By choosing to remember this passphrase, anyone with access to your unlocked computer will be able to open Scarpa and access your servers without authentication.\n\nAre you sure you want to enable this feature?"
+            )
+            
+            response = warning_dlg.run()
+            warning_dlg.destroy()
+            
+            # If the user clicks Cancel, uncheck the box to keep them safe
+            if response != Gtk.ResponseType.OK:
+                widget.set_active(False)
+
     def get_passphrases(self):
         """Returns passphrase, confirm_passphrase, and remember_me status."""
         passphrase = self.entry_pass.get_text()
@@ -2581,7 +2626,7 @@ class PassphraseInputDialog(Gtk.Dialog):
     def show_retry_error(self):
         """Shows the retry error message."""
         self.lbl_retry_msg.show()
-  
+ 
 # ── Helper: Required Placeholder for VTE ────────────────────────────────────
 # This function is strictly required by Vte.Terminal.spawn_async (Argument 9).
 # Even though we don't use the result here, the app will crash if this is missing.
@@ -5294,14 +5339,12 @@ class ScarpaConnectionManager(Gtk.Application):
             self.show_info_dialog("Connection Error", f"No connection to host.\n\nError: {str(e)}")
             return False
 
-    # ── Connect Actions (SSH & SFTP) ─────────────────────────────────────────
     def on_ssh(self, action, param):
         selection = self.tree.get_selection()
         model, paths = selection.get_selected_rows()
         
         if not paths:
             return self._info("Select a server first.")
-            
         if len(paths) > 1:
             return self._info("Please select exactly ONE server to connect to.")
             
@@ -5321,21 +5364,9 @@ class ScarpaConnectionManager(Gtk.Application):
             self.log(f"Launch cancelled (No connection to {host}:{port}).")
             return
 
-        self.current_logging_enabled = cfg.get("logging_enabled", False)
-        self.current_log_path = cfg.get("log_path", "")
-        self.current_log_mode = cfg.get("log_mode", "append")
-
-        if self.current_logging_enabled and self.current_log_mode == "overwrite" and self.current_log_path:
-            try:
-                os.makedirs(os.path.dirname(self.current_log_path), exist_ok=True)
-                with open(self.current_log_path, 'w') as f:
-                    f.write("") # Truncate file
-            except Exception as e:
-                print(f"Error truncating log file: {e}", file=sys.stderr)
-
         self.log(f"Launching SSH: {cfg['name']}")
     
-        # Build forwarding flags using -L/-R/-D syntax (avoids the -o parsing issue)
+        # Build forwarding flags
         forward_opts = []
         for rule in cfg.get("port_forwards", []):
             t = rule.get("type")
@@ -5346,46 +5377,25 @@ class ScarpaConnectionManager(Gtk.Application):
             elif t == "Remote":
                 forward_opts.append(f'-R {int(rule["source_port"])}:{rule["dest_host"]}:{int(rule["dest_port"])}')
     
-        auth      = cfg.get("auth_method")
+        auth = cfg.get("auth_method")
         safe_known_hosts = os.path.join(get_user_data_dir(), "known_hosts")
+        
         cmd_parts = ["spawn", "ssh", f"-oUserKnownHostsFile={safe_known_hosts}", "-oStrictHostKeyChecking=accept-new"]
         if auth == "password":
             cmd_parts.append("-o PubkeyAuthentication=no")
 
         cmd_parts.append("-t")
         cmd_parts.extend(forward_opts)
+        
         if auth == "key_file" and cfg.get("key_file"):
             cmd_parts.extend(["-i", cfg["key_file"]])
+            
         cmd_parts.extend(["-p", str(cfg.get("port", 22))])
         cmd_parts.append(f'{cfg["user"]}@{cfg["host"]}')
     
-        # First line: spawn ssh...
-        lines = [" ".join(cmd_parts) + "\n", "log_user 1\n"]
-    
-        # Password prompt handling with timeout
-        if auth == "password":
-            lines.append('expect -timeout 5 "*assword:*" {\n')
-            lines.append(f'    send -- "{cfg["password"]}\\r"\n')
-            lines.append("    after 500\n")
-            lines.append("} timeout {\n")
-            lines.append("    # skip password prompt\n")
-            lines.append("}\n")
-    
-        # Auto sequence steps with timeout and safe skip
-        for step in cfg.get("auto_sequence", []):
-            exp, snd = step["expect"], step["send"]
-            lines.append(f'expect -timeout 1 "*{exp}*" {{\n')
-            lines.append(f'    send -- "{snd}\\r"\n')
-            lines.append("    after 500\n")
-            lines.append("} timeout {\n")
-            lines.append("    # no match, skip\n")
-            lines.append("}\n")
-    
-        # Hand control to user
-        lines.append("interact\n")
-    
+        # Just pass the command string! No more Expect logic here!
+        lines = [" ".join(cmd_parts)]
         self._launch_expect(lines, f"{cfg['name']} SSH", cfg)
-
 
     def on_sftp(self, action, param):
         selection = self.tree.get_selection()
@@ -5393,7 +5403,6 @@ class ScarpaConnectionManager(Gtk.Application):
         
         if not paths:
             return self._info("Select a server first.")
-            
         if len(paths) > 1:
             return self._info("Please select exactly ONE server to connect to.")
             
@@ -5413,18 +5422,6 @@ class ScarpaConnectionManager(Gtk.Application):
             self.log(f"Launch cancelled (No connection to {host}:{port}).")
             return
  
-        self.current_logging_enabled = cfg.get("logging_enabled", False)
-        self.current_log_path = cfg.get("log_path", "")
-        self.current_log_mode = cfg.get("log_mode", "append") 
-
-        if self.current_logging_enabled and self.current_log_mode == "overwrite" and self.current_log_path:
-            try:
-                os.makedirs(os.path.dirname(self.current_log_path), exist_ok=True)
-                with open(self.current_log_path, 'w') as f:
-                    f.write("") # Truncate file
-            except Exception as e:
-                print(f"Error truncating log file: {e}", file=sys.stderr)
-
         self.log(f"Launching SFTP: {cfg['name']}")
     
         auth       = cfg.get("auth_method")
@@ -5434,15 +5431,13 @@ class ScarpaConnectionManager(Gtk.Application):
         pubkey_opt = "-o PubkeyAuthentication=no" if auth == "password" else ""
         safe_known_hosts = os.path.join(get_user_data_dir(), "known_hosts")
         
-        # --- NEW: Fix SFTP transport binary for the Snap Sandbox ---
         ssh_binary = "ssh" 
         snap_path = os.environ.get("SNAP")
         if snap_path:
             ssh_binary = os.path.join(snap_path, "usr", "bin", "ssh")
 
-        # Create the command with the new -S flag
         cmd_parts = [
-            "spawn", "sftp", 
+            "sftp", 
             f"-S {ssh_binary}", 
             f"-oUserKnownHostsFile={safe_known_hosts}", 
             "-oStrictHostKeyChecking=accept-new", 
@@ -5451,32 +5446,13 @@ class ScarpaConnectionManager(Gtk.Application):
         
         if pubkey_opt:
             cmd_parts.append(pubkey_opt)
-
         if key_opt:
             cmd_parts.extend(key_opt.split())
             
         cmd_parts.extend(["-P", str(port), f'{cfg["user"]}@{cfg["host"]}'])
 
-        lines = [" ".join(cmd_parts) + "\n", "log_user 1\n"]
-        
-        if auth == "password" and cfg.get("password"):
-            lines.append('expect -timeout 5 "*assword:*" {\n')
-            lines.append(f'    send -- "{cfg["password"]}\\r"\n')
-            lines.append("    after 500\n")
-            lines.append("} timeout {\n")
-            lines.append("    # skip password prompt\n")
-            lines.append("}\n")
-        
-        for step in cfg.get("auto_sequence", []):
-            exp, snd = step["expect"], step["send"]
-            lines.append(f'expect -timeout 1 "*{exp}*" {{\n')
-            lines.append(f'    send -- "{snd}\\r"\n')
-            lines.append("    after 500\n")
-            lines.append("} timeout {\n")
-            lines.append("    # no match, skip\n")
-            lines.append("}\n")
-        
-        lines.append("interact\n")
+        # Just pass the command string! No more Expect logic here!
+        lines = [" ".join(cmd_parts)]
         self._launch_expect(lines, f"{cfg['name']} SFTP", cfg)
 
     # Double-click on a server row → launch SSH
@@ -5711,163 +5687,223 @@ class ScarpaConnectionManager(Gtk.Application):
         except ValueError:
             self._error("This server configuration no longer exists.")
 
-    # ── Generate & Launch Expect Script ───────────────────────────────────────
+    # ── Generate & Launch Pexpect Script ──────────────────────────────────────
     def _launch_expect(self, lines, title, cfg):
-        # 1. Verify Expect
-        expect_path = shutil.which("expect")
-        
-        # --- Fallback for Snap Container ---
-        if not expect_path:
-            snap_dir = os.environ.get('SNAP', '')
-            if snap_dir:
-                snap_expect = os.path.join(snap_dir, 'usr/bin/expect')
-                if os.path.exists(snap_expect):
-                    expect_path = snap_expect        
-        
-        if not expect_path:
-            return self._error("'expect' not found. Please install the 'expect' package.")
+        # 1. Parse the SSH/SFTP command directly from your existing setup
+        spawn_line = lines[0].strip()
+        if spawn_line.startswith("spawn "):
+            spawn_line = spawn_line[6:]
+            
+        python_exe = sys.executable
 
-        # --- 2. Setup Real-time Logging (Temp File Strategy) ---
+        # 2. Setup Real-time Logging 
         raw_log_path = None
         logging_stop_event = None
         
-        if getattr(self, "current_logging_enabled", False) and self.current_log_path:
+        # --- THE FIX: Pull settings directly from the config! ---
+        is_logging = cfg.get("logging_enabled", False)
+        final_log_path = cfg.get("log_path", "")
+        
+        if is_logging and final_log_path:
             try:
-                # A. Handle Overwrite Mode Manually
-                log_mode = getattr(self, "current_log_mode", "append")
-                if log_mode == "overwrite":
-                    # Truncate the final log file now so we start fresh
-                    with open(self.current_log_path, 'w') as f:
+                if cfg.get("log_mode", "append") == "overwrite":
+                    with open(final_log_path, 'w') as f:
                         f.write("")
                 
-                # B. Create a unique TEMP file for raw output
                 raw_log_path = os.path.join(tempfile.gettempdir(), f"scarpacm_raw_{uuid.uuid4().hex[:8]}.log")
-                # Create it empty
                 open(raw_log_path, 'w').close()
                 
-                # C. Start the Monitor Thread
                 logging_stop_event = threading.Event()
                 t = threading.Thread(
                     target=self._log_monitor,
-                    # Pass 'cfg' as the last argument so we can read custom strings
-                    args=(raw_log_path, self.current_log_path, logging_stop_event, cfg)
+                    args=(raw_log_path, final_log_path, logging_stop_event, cfg)
                 )
                 t.daemon = True 
                 t.start()
-                
             except Exception as e:
                 print(f"Failed to setup logging: {e}", file=sys.stderr)
-                # Cleanup if setup failed
                 if raw_log_path and os.path.exists(raw_log_path):
                     os.remove(raw_log_path)
                 raw_log_path = None
 
-        # --- 3. Create the expect script ---
-        header = [
-            "#!/usr/bin/env expect\n",
-            "set env(TERM) \"xterm-256color\"\n", 
-            "match_max 100000\n", 
-            "log_user 1\n",
-        ]
+        # 3. Create the Pure-Python "Pexpect Wrapper"
+        script_cfg = {
+            "cmd": spawn_line,
+            "raw_log_path": raw_log_path or "",
+            "password": cfg.get("password", "") if cfg.get("auth_method") == "password" else "",
+            "auto_sequence": cfg.get("auto_sequence", []),
+            "anti_idle_enabled": cfg.get("anti_idle_enabled", False),
+            "anti_idle_int": cfg.get("anti_idle_int", 300),
+            "anti_idle_str": cfg.get("anti_idle_str", "\r"),
+            "cmd_file_enabled": cfg.get("cmd_file_enabled", False),
+            "cmd_file_path": cfg.get("cmd_file_path", "")
+        }
         
-        if raw_log_path:
-            # Tcl: Open the file
-            header.append(f'set log_handle [open "{raw_log_path}" w]\n')
-            # Tcl: CRITICAL - Disable buffering so data is written instantly
-            header.append('fconfigure $log_handle -buffering none\n')
-            # Tcl: Tell Expect to use this unbuffered handle
-            header.append('log_file -open $log_handle\n')
-        
-        header.append("set timeout -1\n")
-        
-        # --- Resize Trap Logic ---
-        resize_trap = [
-            "\n# --- Robust Window Size Syncing ---\n",
-            "proc sync_term_size {} {\n",
-            "    global spawn_out\n", 
-            "    if {[info exists spawn_out(slave,name)]} {\n",
-            "        set rows [stty rows]\n",
-            "        set cols [stty columns]\n",
-            "        stty rows $rows columns $cols < $spawn_out(slave,name)\n",
-            "    }\n",
-            "}\n",
-            "trap { sync_term_size } WINCH\n",
-            "sync_term_size\n\n"
-        ]
+        wrapper_code = f"""import sys
+import os
+import time
+import json
+import threading
+import struct
+import fcntl
+import termios
+import signal
+import shlex
+import pexpect
+import re
 
-        final_lines = list(lines)
+cfg = json.loads('''{json.dumps(script_cfg)}''')
 
-        # --- Anti-idle Logic ---
-        if cfg.get("anti_idle_enabled", False):
-            idle_int = cfg.get("anti_idle_int", 300)
-            idle_str = cfg.get("anti_idle_str", "\\r")
-            new_interact = f'interact timeout {idle_int} {{ send "{idle_str}" }}\n'
-            for i, line in enumerate(final_lines):
-                if line.strip() == "interact":
-                    final_lines[i] = new_interact
-                    break
+# --- 1. Dual Logger (Pure Stream Only) ---
+class DualLogger:
+    def __init__(self, path):
+        self.f = open(path, 'a', encoding='utf-8') if path else None
+        self.mute_screen = False
+        self.screen_buffer = ""
         
-        spawn_index = -1
-        for i, line in enumerate(final_lines):
-            if line.strip().startswith("spawn"):
-                spawn_index = i
-                break
-        
-        if spawn_index != -1:
-            final_lines[spawn_index+1:spawn_index+1] = resize_trap
+    def write(self, s):
+        if self.f:
+            self.f.write(s)
+            self.f.flush()
+            
+        if self.mute_screen:
+            self.screen_buffer += s
         else:
-            header.extend(resize_trap)
+            sys.stdout.write(s)
+            sys.stdout.flush()
             
-        # --- Startup Command File Logic ---
-        if cfg.get("cmd_file_enabled", False):
-            cpath = cfg.get("cmd_file_path", "")
-            if cpath and os.path.exists(cpath):
-                try:
-                    with open(cpath, "r") as f:
-                        file_lines = f.readlines()
-                    
-                    cmd_block = []
-                    cmd_block.append("after 500\n") 
-                    
-                    for line in file_lines:
-                        l = line.rstrip('\r\n')
-                        l_esc = l.replace('\\', '\\\\').replace('"', '\\"').replace('[', '\\[').replace(']', '\\]').replace('$', '\\$')
-                        cmd_block.append(f'send -- "{l_esc}\\r"\n')
-                        cmd_block.append("after 100\n")
-                    
-                    idx_interact = -1
-                    for i, ln in enumerate(final_lines):
-                        if ln.strip().startswith("interact"):
-                            idx_interact = i
-                            break
-                    
-                    if idx_interact != -1:
-                        final_lines[idx_interact:idx_interact] = cmd_block
-                    else:
-                        final_lines.extend(cmd_block)
-                        
-                except Exception as e:
-                    print(f"Error reading command file: {e}", file=sys.stderr)
+    def dump_to_screen(self):
+        if self.screen_buffer:
+            sys.stdout.write(self.screen_buffer)
+            sys.stdout.flush()
+            self.screen_buffer = ""
+        self.mute_screen = False
+        
+    def flush(self):
+        sys.stdout.flush()
+        if self.f: self.f.flush()
 
-        if raw_log_path:
-            final_lines.append('\ncatch {close $log_handle}\n')
+logger = DualLogger(cfg['raw_log_path'])
+
+cmd_parts = shlex.split(cfg['cmd'])
+
+child = pexpect.spawn(cmd_parts[0], cmd_parts[1:], encoding='utf-8')
+child.logfile_read = logger
+
+def sigwinch_handler(sig, data):
+    try:
+        s = struct.pack("HHHH", 0, 0, 0, 0)
+        a = struct.unpack('hhhh', fcntl.ioctl(sys.stdout.fileno(), termios.TIOCGWINSZ, s))
+        child.setwinsize(a[0], a[1])
+    except: pass
+signal.signal(signal.SIGWINCH, sigwinch_handler)
+sigwinch_handler(None, None)
+
+# --- MUTE EARLY ---
+logger.mute_screen = True
+
+# --- Password ---
+if cfg['password']:
+    try:
+        child.expect(['assword:', 'assphrase:'], timeout=10)
+        child.sendline(cfg['password'])
+    except: pass
+
+# --- THE ERASER ---
+# Wipes the password prompt from the buffer so it never shows on screen!
+logger.screen_buffer = ""
+
+# --- Auto Sequence ---
+for step in cfg['auto_sequence']:
+    exp = step.get('expect', '')
+    snd = step.get('send', '')
+    to = int(step.get('timeout', 5))
+    
+    if exp:
+        try:
+            if exp.endswith("$ ") or exp.endswith("# "):
+                user_part = re.escape(exp[:-2])
+                symbol_part = re.escape(exp[-2])
+                regex_pattern = user_part + '.*' + symbol_part + ' '
+                child.expect(regex_pattern, timeout=to)
+            else:
+                child.expect_exact(exp, timeout=to)
             
-        script_content = "".join(header + final_lines)
+            if snd:
+                child.sendline(snd)
+            time.sleep(0.5)
+            
+        except pexpect.TIMEOUT:
+            pass
+        except pexpect.EOF:
+            sys.exit(0)
 
+# --- Command File ---
+if cfg['cmd_file_enabled'] and cfg['cmd_file_path'] and os.path.exists(cfg['cmd_file_path']):
+    with open(cfg['cmd_file_path'], 'r') as f:
+        for line in f:
+            child.sendline(line.rstrip('\\r\\n'))
+            time.sleep(0.1)
+
+# --- THE SPONGE ---
+try:
+    while True:
+        child.read_nonblocking(size=4096, timeout=0.2)
+except pexpect.TIMEOUT:
+    pass
+except pexpect.EOF:
+    pass
+
+# NOW we dump the clean prompt to the screen!
+logger.dump_to_screen()
+
+# --- Anti Idle ---
+if cfg['anti_idle_enabled']:
+    def keepalive():
+        while child.isalive():
+            time.sleep(cfg['anti_idle_int'])
+            if child.isalive():
+                try: os.write(child.child_fd, cfg['anti_idle_str'].encode())
+                except: break
+    t = threading.Thread(target=keepalive)
+    t.daemon = True
+    t.start()
+
+child.logfile_read = None 
+
+def interact_logger(b):
+    if logger.f:
+        logger.f.write(b.decode('utf-8', 'replace'))
+        logger.f.flush()
+    return b
+
+try:
+    if child.isalive():
+        child.interact(output_filter=interact_logger)
+    else:
+        time.sleep(10)
+except Exception:
+    time.sleep(10)
+
+if logger.f: logger.f.close()
+"""
+
+
+
+ 	
+        # 4. Save and Execute the Wrapper
         tf = None
         try:
-            tf = tempfile.NamedTemporaryFile("w", delete=False, suffix=".exp")
-            tf.write(script_content)
+            tf = tempfile.NamedTemporaryFile("w", delete=False, suffix=".py")
+            tf.write(wrapper_code)
             tf.close()
             os.chmod(tf.name, 0o700)
 
-            # --- Create Terminal First ---
             terminal = Vte.Terminal()
             self.apply_appearance_to_terminal(terminal, cfg)
             terminal.connect("key-press-event", self._on_terminal_key_press)
             terminal.connect("button-press-event", self._on_terminal_button_press)
 
-            # --- Create Window and HeaderBar ---
             term_window = Gtk.Window()
             term_window.set_default_size(800, 600)
             term_window.set_modal(False)
@@ -5878,7 +5914,6 @@ class ScarpaConnectionManager(Gtk.Application):
             hb.set_title(title)
             term_window.set_titlebar(hb)
 
-            # --- Create Settings Button ---
             btn_settings = Gtk.Button.new_from_icon_name("open-menu-symbolic", Gtk.IconSize.MENU)
             btn_settings.set_tooltip_text("Edit Server Settings")
             btn_settings.connect("clicked", self._on_term_settings_clicked, (cfg, terminal, term_window))
@@ -5889,26 +5924,23 @@ class ScarpaConnectionManager(Gtk.Application):
             term_window._wg = wg
 
             def on_child_exited(_terminal, _status):
-                # 1. Stop logging
                 if logging_stop_event:
                     logging_stop_event.set()
-                
-                # 2. Cleanup window and temp file
                 term_window.close()
                 if os.path.exists(tf.name):
                     os.remove(tf.name)
-            
+         
             terminal.connect("child-exited", on_child_exited)
             
-            argv = [expect_path, "-f", tf.name]
+            argv = [python_exe, tf.name]
 
             with warnings.catch_warnings():
                 warnings.simplefilter("ignore")
                 terminal.spawn_sync(
                     Vte.PtyFlags.DEFAULT,
-                    os.environ.get('HOME', '/tmp'), # Made this safer just in case
+                    os.environ.get('HOME', '/tmp'),
                     argv,
-                    GLib.get_environ(),             # <--- THE MAGIC FIX!
+                    GLib.get_environ(),
                     GLib.SpawnFlags.SEARCH_PATH, 
                     None,
                     None,
@@ -6450,6 +6482,20 @@ class ScarpaConnectionManager(Gtk.Application):
         pw_entry.set_visibility(False)
         pw_entry.set_placeholder_text("Enter password")
         pw_entry.set_activates_default(True)
+        
+        # --- NEW: Show/Hide Password Eye Icon ---
+        pw_entry.set_icon_from_icon_name(Gtk.EntryIconPosition.SECONDARY, "view-reveal-symbolic")
+        pw_entry.set_icon_tooltip_text(Gtk.EntryIconPosition.SECONDARY, "Show/Hide Password")
+        
+        def on_pw_icon_press(entry, icon_pos, event):
+            if icon_pos == Gtk.EntryIconPosition.SECONDARY:
+                is_visible = entry.get_visibility()
+                entry.set_visibility(not is_visible)
+                new_icon = "view-conceal-symbolic" if not is_visible else "view-reveal-symbolic"
+                entry.set_icon_from_icon_name(Gtk.EntryIconPosition.SECONDARY, new_icon)
+                
+        pw_entry.connect("icon-press", on_pw_icon_press)
+        # ----------------------------------------
     
         key_entry = Gtk.Entry(); key_entry.set_size_request(300, -1)
         key_btn   = Gtk.Button(label="Browse")
@@ -6744,7 +6790,8 @@ class ScarpaConnectionManager(Gtk.Application):
         seq_page = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6, margin=10)
         nb.append_page(seq_page, Gtk.Label(label="Login Actions"))
     
-        seq_store = Gtk.ListStore(str, str, bool)  # expect, send, hide
+        # ADDED 'int' to the store for the timeout value (expect, send, hide, timeout)
+        seq_store = Gtk.ListStore(str, str, bool, int)  
         seq_view = Gtk.TreeView(model=seq_store)
         seq_view.set_grid_lines(Gtk.TreeViewGridLines.BOTH)
     
@@ -6761,13 +6808,20 @@ class ScarpaConnectionManager(Gtk.Application):
             txt  = model.get_value(it, 1)
             hide = model.get_value(it, 2)
             renderer.set_property("text", "*" * len(txt) if hide else txt)
+
+        # --- NEW: Formatter for the Timeout column ---
+        def _time_cell(col, renderer, model, it, data):
+            timeout = model.get_value(it, 3)
+            renderer.set_property("text", f"{timeout}s")
+        # ---------------------------------------------
     
-        for title, func in (("Expect", _exp_cell), ("Send", _snd_cell)):
+        # Added the Timeout column to the view loop
+        for title, func, width in (("Expect", _exp_cell, 140), ("Send", _snd_cell, 140), ("Timeout", _time_cell, 70)):
             rnd = Gtk.CellRendererText()
             col = Gtk.TreeViewColumn(title, rnd)
             col.set_cell_data_func(rnd, func)
             col.set_sizing(Gtk.TreeViewColumnSizing.FIXED)
-            col.set_fixed_width(165)
+            col.set_fixed_width(width)
             seq_view.append_column(col)
     
         btn_box = Gtk.Box(spacing=6)
@@ -6788,9 +6842,24 @@ class ScarpaConnectionManager(Gtk.Application):
         seq_page.pack_start(btn_box, False, False, 0)
     
         if cfg:
+            # Grab the username to check against
+            saved_user = cfg.get("user", "")
+            
             for step in cfg.get("auto_sequence", []):
-                seq_store.append([step["expect"], step["send"], step.get("hide", True)])
- 
+                exp_val = step["expect"]
+                
+                # --- YOUR BRILLIANT FIX (LOAD PHASE) ---
+                # If the backend has the hidden anchor, strip it out so the UI looks clean!
+                if exp_val in (f"{saved_user}$ ", f"{saved_user}# "):
+                    exp_val = saved_user
+                # ---------------------------------------
+                
+                seq_store.append([
+                    exp_val, 
+                    step["send"], 
+                    step.get("hide", True), 
+                    step.get("timeout", 5)
+                ])
 
         # ── Port Forwarding Tab ──────────────────────
         fwd_page = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6, margin=10)
@@ -7059,7 +7128,6 @@ class ScarpaConnectionManager(Gtk.Application):
             if is_duplicate:
                 self.show_info_dialog("Name Collision", f"A server named '{name}' already exists in the '{target_folder}' folder.\n\nPlease choose a different name or folder.")
                 continue
-            # --- END COLLISION CHECK ---
     
             result = {
                 "name":         name,
@@ -7083,9 +7151,20 @@ class ScarpaConnectionManager(Gtk.Application):
                 "anti_idle_str":     ent_idle_str.get_text(),
                 "anti_idle_int":     int(spin_idle.get_value()),
                 "auto_sequence": [
-                    {"expect": seq_store[i][0], "send": seq_store[i][1], "hide": seq_store[i][2]}
+                    {
+                        # If they typed exactly the username, secretly append the $ or # for the backend
+                        "expect": (
+                            f"{en_user.get_text().strip()}# " if seq_store[i][0] == "root" and en_user.get_text().strip() == "root" 
+                            else f"{en_user.get_text().strip()}$ " if seq_store[i][0] == en_user.get_text().strip() and seq_store[i][0] != "" 
+                            else seq_store[i][0]
+                        ), 
+                        "send": seq_store[i][1], 
+                        "hide": seq_store[i][2], 
+                        "timeout": seq_store[i][3]
+                    }
                     for i in range(len(seq_store))
                 ],
+
                 "port_forwards": []
             }
     
@@ -7282,7 +7361,7 @@ class ScarpaConnectionManager(Gtk.Application):
     def _open_seq_editor(self, parent, seq_store, tree_iter):
         """
         Add/Edit a single Login-Action step.
-        seq_store: Gtk.ListStore(str expect, str send, bool hide)
+        seq_store: Gtk.ListStore(str expect, str send, bool hide, int timeout)
         tree_iter: iter to edit, or None to append new.
         """
         # --- FIX: Attach to the actual 'parent' dialog to avoid GTK structural crashes ---
@@ -7296,13 +7375,14 @@ class ScarpaConnectionManager(Gtk.Application):
             Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL,
             Gtk.STOCK_OK,     Gtk.ResponseType.OK
         )
-        dlg.set_default_size(360, 160)
+        dlg.set_default_size(360, -1) # Switched to -1 so it naturally fits the new row
         dlg.set_resizable(False)
         
         # Set default response so Enter works smoothly
         dlg.set_default_response(Gtk.ResponseType.OK)
     
         box = dlg.get_content_area()
+        box.set_spacing(6)
         box.set_margin_top(10)
         box.set_margin_bottom(10)
         box.set_margin_start(10)
@@ -7310,7 +7390,10 @@ class ScarpaConnectionManager(Gtk.Application):
     
         row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
         ent_exp = Gtk.Entry(); ent_exp.set_size_request(165, -1)
+        ent_exp.set_placeholder_text("Expect...") # Bonus: placeholder text
+        
         ent_snd = Gtk.Entry(); ent_snd.set_size_request(165, -1)
+        ent_snd.set_placeholder_text("Send...")   # Bonus: placeholder text
         
         # Trigger OK when pressing Enter in these boxes
         ent_exp.set_activates_default(True)
@@ -7321,18 +7404,36 @@ class ScarpaConnectionManager(Gtk.Application):
         row.pack_start(ent_snd, False, False, 0)
         box.pack_start(row, False, False, 0)
     
-        mask_chk = Gtk.CheckButton(label="Hide Send Input")
+        options_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
+        
+        mask_chk = Gtk.CheckButton(label="Hide Send")
         mask_chk.set_tooltip_text("When unselected, show and clear Send text")
         mask_chk.set_active(False)
-        box.pack_start(mask_chk, False, False, 6)
+        options_row.pack_start(mask_chk, False, False, 0)
+        
+        timeout_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=4)
+        timeout_label = Gtk.Label(label="Timeout (s):")
+        
+        # Create a number spinner from 1 to 300 seconds
+        timeout_spin = Gtk.SpinButton.new_with_range(1, 300, 1)
+        timeout_spin.set_value(5) # Default to 5 seconds
+        timeout_spin.set_activates_default(True)
+        
+        timeout_box.pack_end(timeout_spin, False, False, 0)
+        timeout_box.pack_end(timeout_label, False, False, 0)
+        
+        options_row.pack_end(timeout_box, False, False, 0)
+        box.pack_start(options_row, False, False, 0)
     
         if tree_iter:
             e0 = seq_store.get_value(tree_iter, 0)
             s0 = seq_store.get_value(tree_iter, 1)
             h0 = seq_store.get_value(tree_iter, 2)
+            t0 = seq_store.get_value(tree_iter, 3) # Get timeout
             ent_exp.set_text(e0)
             ent_snd.set_text(s0)
             mask_chk.set_active(h0)
+            timeout_spin.set_value(t0) # Set timeout
     
         ent_snd.set_visibility(not mask_chk.get_active())
     
@@ -7349,10 +7450,14 @@ class ScarpaConnectionManager(Gtk.Application):
             exp_txt = ent_exp.get_text().strip()
             snd_txt = ent_snd.get_text()
             hide_fl = mask_chk.get_active()
+            timeout_val = timeout_spin.get_value_as_int() # Read the integer
+            
             if tree_iter:
-                seq_store.set(tree_iter, [0,1,2], [exp_txt, snd_txt, hide_fl])
+                # Update all 4 columns!
+                seq_store.set(tree_iter, [0,1,2,3], [exp_txt, snd_txt, hide_fl, timeout_val])
             else:
-                seq_store.append([exp_txt, snd_txt, hide_fl])
+                # Append all 4 columns!
+                seq_store.append([exp_txt, snd_txt, hide_fl, timeout_val])
     
         dlg.destroy()
 
