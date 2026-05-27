@@ -1,6 +1,6 @@
 scarpa-connection-manager (1.2.22-26) stable; urgency=medium
 
-  * Major oherhaul of the Login Action Expect function. Swapping old TCL/expect for newwer pexpect
+  * Major overhaul of the Login Action Expect function. Swapping old TCL/expect for newwer pexpect
   * Added timeout timer for the Login Action function.
   * Added show/hide for all passphras fields 
  
