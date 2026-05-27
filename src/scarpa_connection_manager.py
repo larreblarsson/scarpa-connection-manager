@@ -809,6 +809,12 @@ class SFTPWindow(Gtk.Window):
         self.local_monitor = None
         self._local_refresh_timeout_id = None        
 
+        # --- NEW: Temp File Auto-Sync Trackers ---
+        self.temp_dir = None
+        self.temp_dir_monitor = None
+        self.temp_file_map = {}       # Maps "filename.txt" -> "/remote/path/filename.txt"
+        self.temp_upload_timers = {}  # Tracks debounce timers to prevent upload spam     
+
         # --- Icon Engine Setup ---
         self.icon_theme = Gtk.IconTheme.get_default()
         self.yellow_folder_pixbuf = self._create_yellow_folder_pixbuf()
@@ -1806,11 +1812,96 @@ class SFTPWindow(Gtk.Window):
             new_path = os.path.dirname(self.current_remote_dir) if filename == ".." else os.path.join(self.current_remote_dir, filename).replace('\\', '/')
             self.load_remote_directory(new_path)
         else:
-            # --- NEW: Block opening and show descriptive message ---
-            self.show_error_dialog(
-                "Remote File Access", 
-                "Cannot open a remote file locally!\n\nPlease download the file to your local system to open or edit it, and then upload it back to the server."
-            )
+            # --- THE FIX: Download to temp folder and open! ---
+            remote_filepath = f"{self.current_remote_dir}/{filename}".replace('//', '/')
+            self._open_remote_file_in_temp(remote_filepath, filename)
+    
+    def _open_remote_file_in_temp(self, remote_filepath, filename):
+        if not self.temp_dir:
+            self.temp_dir = tempfile.mkdtemp(prefix="scarpa_sftp_")
+            
+            # Start monitoring the temp directory for ANY file changes!
+            gfile = Gio.File.new_for_path(self.temp_dir)
+            self.temp_dir_monitor = gfile.monitor_directory(Gio.FileMonitorFlags.NONE, None)
+            self.temp_dir_monitor.connect("changed", self._on_temp_dir_changed)
+
+        local_temp_path = os.path.join(self.temp_dir, filename)
+        
+        # Register the file in our map so the monitor knows where it belongs on the server
+        self.temp_file_map[filename] = remote_filepath
+
+        self.set_status(f"Downloading '{filename}' to temporary folder...")
+
+        def _download_and_open():
+            try:
+                self.sftp.get(remote_filepath, local_temp_path)
+                GLib.idle_add(self._open_system_file, local_temp_path, filename)
+                GLib.idle_add(self.set_status, f"Opened '{filename}' (Auto-Sync Enabled)")
+            except Exception as e:
+                GLib.idle_add(self.show_error_dialog, "Download Failed", str(e))
+                GLib.idle_add(self.set_status, "Failed to download temporary file.")
+
+        thread = threading.Thread(target=_download_and_open)
+        thread.daemon = True
+        thread.start()
+
+    def _on_temp_dir_changed(self, monitor, file, other_file, event_type):
+        # We only care when data is written or a new file replaces the old one
+        valid_events = [
+            Gio.FileMonitorEvent.CHANGED,
+            Gio.FileMonitorEvent.CHANGES_DONE_HINT,
+            Gio.FileMonitorEvent.CREATED
+        ]
+        
+        if event_type not in valid_events:
+            return
+            
+        filename = file.get_basename()
+        
+        # Ignore hidden text editor swap files (like .goutputstream or file.txt~)
+        if filename.startswith('.') or filename.endswith('~'):
+            return
+            
+        # Ignore files we aren't explicitly tracking
+        if filename not in self.temp_file_map:
+            return
+            
+        # DEBOUNCE: When you hit 'Save', editors trigger 3 to 5 events instantly.
+        # We cancel any pending upload and set a new 1-second timer. 
+        if filename in self.temp_upload_timers:
+            GLib.source_remove(self.temp_upload_timers[filename])
+            
+        self.temp_upload_timers[filename] = GLib.timeout_add(1000, self._trigger_auto_upload, filename)
+
+    def _trigger_auto_upload(self, filename):
+        # Clear the timer record
+        if filename in self.temp_upload_timers:
+            del self.temp_upload_timers[filename]
+            
+        remote_path = self.temp_file_map[filename]
+        local_path = os.path.join(self.temp_dir, filename)
+        
+        if not os.path.exists(local_path):
+            return False
+            
+        self.set_status(f"Auto-saving '{filename}' to server...")
+        
+        def _upload():
+            try:
+                self.sftp.put(local_path, remote_path)
+                GLib.idle_add(self.set_status, f"Auto-saved '{filename}' successfully!")
+                
+                # If the user is currently looking at the folder where this file lives, refresh it so the filesize/time updates!
+                if os.path.dirname(remote_path) == self.current_remote_dir:
+                    GLib.idle_add(self.load_remote_directory, self.current_remote_dir)
+            except Exception as e:
+                GLib.idle_add(self.set_status, f"Auto-save failed for '{filename}': {e}")
+                
+        thread = threading.Thread(target=_upload)
+        thread.daemon = True
+        thread.start()
+        
+        return False # Returning False stops the GLib timer from repeating
 
     # --- MOUSE CLICK & CONTEXT MENU ---
     def on_button_press(self, treeview, event, pane):
@@ -2449,17 +2540,30 @@ class SFTPWindow(Gtk.Window):
         self.statusbar.push(self.context_id, message)
 
     def on_close(self, widget):
-        # Clean up the monitor
+        # Clean up local directory monitor
         if self.local_monitor:
             self.local_monitor.cancel()
             self.local_monitor = None
         if self._local_refresh_timeout_id:
             GLib.source_remove(self._local_refresh_timeout_id)
 
+        # --- CLEANUP AUTO-SYNC ---
+        if self.temp_dir_monitor:
+            self.temp_dir_monitor.cancel()
+            self.temp_dir_monitor = None
+            
+        for timer_id in self.temp_upload_timers.values():
+            GLib.source_remove(timer_id)
+            
+        if self.temp_dir and os.path.exists(self.temp_dir):
+            try:
+                shutil.rmtree(self.temp_dir)
+            except Exception:
+                pass
+
         # Close connections
         if self.sftp: self.sftp.close()
         if self.transport: self.transport.close()
-
 
 if HAS_SECRET:
     SECRET_SCHEMA = Secret.Schema.new("org.scarpa.ConnectionManager",
