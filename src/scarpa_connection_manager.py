@@ -1818,7 +1818,18 @@ class SFTPWindow(Gtk.Window):
     
     def _open_remote_file_in_temp(self, remote_filepath, filename):
         if not self.temp_dir:
-            self.temp_dir = tempfile.mkdtemp(prefix="scarpa_sftp_")
+            # --- THE SNAP FIX ---
+            if os.environ.get('SNAP'):
+                # Force the temp folder into the user's real home directory so external apps can see it!
+                real_home = os.environ.get('SNAP_REAL_HOME', os.path.expanduser('~'))
+                base_temp_dir = os.path.join(real_home, '.scarpa_sftp_temp')
+                os.makedirs(base_temp_dir, exist_ok=True)
+                
+                # Create the random session folder INSIDE the hidden home directory
+                self.temp_dir = tempfile.mkdtemp(prefix="session_", dir=base_temp_dir)
+            else:
+                # Normal behavior for PPA/Local runs
+                self.temp_dir = tempfile.mkdtemp(prefix="scarpa_sftp_")
             
             # Start monitoring the temp directory for ANY file changes!
             gfile = Gio.File.new_for_path(self.temp_dir)
