@@ -1,4 +1,4 @@
-scarpa-connection-manager (1.2.22-28 stable; urgency=medium
+scarpa-connection-manager (1.2.22-28) stable; urgency=medium
 
   * Fix for SNAP version for remote side file opening and editing
   
