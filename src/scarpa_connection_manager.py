@@ -1610,13 +1610,22 @@ class SFTPWindow(Gtk.Window):
     def _open_system_file(self, filepath, filename):
         self.set_status(f"Launching {filename}...")
         try:
-            # Use 'gio open' (the Ubuntu/GNOME standard) to launch the file
-            # DEVNULL hides any background DBus/Wayland warnings from polluting your terminal
-            subprocess.Popen(
-                ['gio', 'open', filepath],
-                stdout=subprocess.DEVNULL,
-                stderr=subprocess.DEVNULL
-            )
+            abs_path = os.path.abspath(filepath)
+            
+            if os.environ.get('SNAP'):
+                # In a Snap, 'xdg-open' securely routes the request to the host OS Desktop Portal
+                subprocess.Popen(
+                    ['xdg-open', abs_path],
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL
+                )
+            else:
+                # Normal behavior for PPA/Local
+                subprocess.Popen(
+                    ['gio', 'open', abs_path],
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL
+                )
         except Exception as e:
             self.show_error_dialog("Cannot Open File", f"Failed to launch '{filename}':\n{str(e)}")
 
@@ -1818,17 +1827,15 @@ class SFTPWindow(Gtk.Window):
     
     def _open_remote_file_in_temp(self, remote_filepath, filename):
         if not self.temp_dir:
-            # --- THE SNAP FIX ---
             if os.environ.get('SNAP'):
-                # Force the temp folder into the user's real home directory so external apps can see it!
-                real_home = os.environ.get('SNAP_REAL_HOME', os.path.expanduser('~'))
-                base_temp_dir = os.path.join(real_home, '.scarpa_sftp_temp')
+                # THE SNAP FIX: Use the app's dedicated Snap Common directory!
+                # Snaps cannot write to hidden folders in ~/, but they CAN write here.
+                snap_common = os.environ.get('SNAP_USER_COMMON', os.path.expanduser('~'))
+                base_temp_dir = os.path.join(snap_common, 'sftp_temp')
                 os.makedirs(base_temp_dir, exist_ok=True)
                 
-                # Create the random session folder INSIDE the hidden home directory
                 self.temp_dir = tempfile.mkdtemp(prefix="session_", dir=base_temp_dir)
             else:
-                # Normal behavior for PPA/Local runs
                 self.temp_dir = tempfile.mkdtemp(prefix="scarpa_sftp_")
             
             # Start monitoring the temp directory for ANY file changes!
