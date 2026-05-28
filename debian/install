@@ -4,6 +4,4 @@ data/icons/hicolor/512x512/apps/scarpa_icon.png usr/share/icons/hicolor/512x512/
 docs/Disclaimer.txt usr/share/scarpa_connection_manager/
 docs/user_guide.html usr/share/scarpa_connection_manager/
 docs/readme.md usr/share/scarpa_connection_manager/
-docs/folder.png usr/share/scarpa_connection_manager/
-docs/server.png usr/share/scarpa_connection_manager/
-
+docs/*.png usr/share/scarpa_connection_manager/
