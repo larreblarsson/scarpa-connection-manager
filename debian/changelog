@@ -1,3 +1,9 @@
+scarpa-connection-manager (1.2.22-31) stable; urgency=medium
+
+  * Updates to snapcraft.yaml
+  
+ -- Tomas Larsson <larre.b.larsson@gmail.com>  Thu, 28 May 2026 16:00:00 +0100  
+
 scarpa-connection-manager (1.2.22-30) stable; urgency=medium
 
   * Updates to debian install file
