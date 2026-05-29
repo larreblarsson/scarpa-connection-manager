@@ -1,3 +1,9 @@
+scarpa-connection-manager (1.2.22-32) stable; urgency=medium
+
+  * Correction in user_guide.html
+  
+ -- Tomas Larsson <larre.b.larsson@gmail.com>  Fri, 29 May 2026 14:00:00 +0100  
+
 scarpa-connection-manager (1.2.22-31) stable; urgency=medium
 
   * Updates to snapcraft.yaml
