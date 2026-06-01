@@ -1982,7 +1982,7 @@ class SFTPWindow(Gtk.Window):
                 
                 path_info = treeview.get_path_at_pos(int(event.x), int(event.y))
                 if path_info:
-                     was_hollow = treeview.get_style_context().has_class("hollow-selection")
+                    was_hollow = treeview.get_style_context().has_class("hollow-selection")
                    
                     treeview.get_style_context().remove_class("hollow-selection")
                     
