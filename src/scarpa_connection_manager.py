@@ -889,15 +889,18 @@ class SFTPWindow(Gtk.Window):
             border-right: none; 
             border-radius: 0px; 
         } 
-       
+        
         /* Hyperlink style for path breadcrumbs */
         .breadcrumb-btn { 
             background: transparent; 
             color: #000000; 
             font-weight: normal;
-            padding: 2px 2px;
+            padding: 1px 2px;
             border: none;
             box-shadow: none;
+            min-width: 0px;
+            min-height: 0px;
+            margin: 0px;
         }
         .breadcrumb-drag-hover {
             font-weight: bold;
@@ -912,6 +915,22 @@ class SFTPWindow(Gtk.Window):
         .breadcrumb-sep {
             color: #888888;
             font-weight: bold;
+            margin: 0px 2px;
+        }
+        treeview:selected {
+            background-color: #d3d3d3;
+            color: #000000;
+            border: none; /* Removed the solid border here so it's perfectly flush */
+        }
+
+        treeview.hollow-selection:selected {
+            background-color: transparent;
+            color: #000000;
+            /* Draw ONLY top and bottom lines to kill the vertical column separators! */
+            border-top: 1px solid #a0a0a0;
+            border-bottom: 1px solid #a0a0a0;
+            border-left: none;
+            border-right: none;
         }
         """
         css_provider.load_from_data(css)
@@ -1244,22 +1263,19 @@ class SFTPWindow(Gtk.Window):
 
     # --- ACTION BUTTONS ---
     def on_selection_changed(self, selection, pane):
-        if self._clearing_selection: return
+        # We still want to track which pane was last clicked for operations
+        if self._clearing_selection: 
+            return
         
         self.active_pane = pane
         self._update_pane_highlight()
-        self._clearing_selection = True
         
-        if pane == "local":
-            self.remote_treeview.get_selection().unselect_all()
-        else:
-            self.local_treeview.get_selection().unselect_all()
-            
-        self._clearing_selection = False
+        # --- REMOVED: The logic that forced the other pane to clear its selection ---
         
         model, paths = selection.get_selected_rows()
         valid_count = sum(1 for p in paths if model.get_value(model.get_iter(p), 1) != "..")
         
+        # Update buttons based on the currently active selection
         if valid_count > 0 and not self.transfer_active and not self.search_active:
             self.transfer_btn.set_sensitive(True)
             self.resume_btn.set_sensitive(True)
@@ -1274,12 +1290,14 @@ class SFTPWindow(Gtk.Window):
                 self.transfer_icon.set_from_icon_name("pan-start-symbolic", Gtk.IconSize.BUTTON)
                 self.transfer_btn.set_tooltip_text(f"Download {valid_count} item(s) to Local")
         else:
-            self.transfer_btn.set_sensitive(False)
-            self.transfer_btn.set_name("") 
-            self.resume_btn.set_sensitive(False)
-            self.resume_btn.set_name("")
-            self.transfer_icon.set_from_icon_name("network-transmit-receive", Gtk.IconSize.BUTTON)
-            self.transfer_btn.set_tooltip_text("Select items to transfer")
+            # Only disable buttons if NOTHING is selected in the currently active pane
+            if valid_count == 0:
+                self.transfer_btn.set_sensitive(False)
+                self.transfer_btn.set_name("") 
+                self.resume_btn.set_sensitive(False)
+                self.resume_btn.set_name("")
+                self.transfer_icon.set_from_icon_name("network-transmit-receive", Gtk.IconSize.BUTTON)
+                self.transfer_btn.set_tooltip_text("Select items to transfer")
 
     def on_transfer_button_clicked(self, btn):
         self._initiate_transfer(resume=False)
@@ -1570,6 +1588,14 @@ class SFTPWindow(Gtk.Window):
         self._execute_rename(pane, old_path, new_text)
 
     def trigger_inline_rename(self, treeview, path):
+        model = treeview.get_model()
+        iter_ = model.get_iter(path)
+        filename = model.get_value(iter_, 1)
+        
+        # --- FIX: Prevent renaming the ".." navigation folder ---
+        if filename == "..":
+            return
+            
         renderer = self.local_text_renderer if treeview == self.local_treeview else self.remote_text_renderer
         renderer.set_property("editable", True)
         treeview.set_cursor(path, treeview.get_column(0), True)
@@ -1919,7 +1945,7 @@ class SFTPWindow(Gtk.Window):
         thread.daemon = True
         thread.start()
         
-        return False # Returning False stops the GLib timer from repeating
+        return False 
 
     # --- MOUSE CLICK & CONTEXT MENU ---
     def on_button_press(self, treeview, event, pane):
@@ -1951,8 +1977,15 @@ class SFTPWindow(Gtk.Window):
 
             # --- Existing Left Click Logic ---
             elif event.button == 1:
+                # 1. Force focus immediately so GTK doesn't get confused
+                treeview.grab_focus()
+                
                 path_info = treeview.get_path_at_pos(int(event.x), int(event.y))
                 if path_info:
+                     was_hollow = treeview.get_style_context().has_class("hollow-selection")
+                   
+                    treeview.get_style_context().remove_class("hollow-selection")
+                    
                     path = path_info[0]
                     selection = treeview.get_selection()
                     model, paths = selection.get_selected_rows()
@@ -1962,29 +1995,19 @@ class SFTPWindow(Gtk.Window):
                     else:
                         self.drag_cached_paths = None
 
-                    if selection.path_is_selected(path) and len(paths) == 1:
-                        if event.time - self._last_click_time > 400: 
+                    if selection.path_is_selected(path) and len(paths) == 1 and not was_hollow:
+                        if event.time - self._last_click_time > 750:  
                             self._rename_candidate_path = path
                             self._rename_candidate_treeview = treeview
                     
                     self._last_click_time = event.time
                     return False
                 else:
-                    # --- THE FIX: User clicked the empty space! Clear the selection ---
-                    # 1. Update the visual border to this pane
+                    treeview.get_style_context().add_class("hollow-selection")
+                    
                     self.active_pane = pane
                     self._update_pane_highlight()
-                    
-                    # 2. Deselect everything in BOTH panes
-                    self._clearing_selection = True
-                    treeview.get_selection().unselect_all()
-                    other_tv = self.remote_treeview if pane == "local" else self.local_treeview
-                    other_tv.get_selection().unselect_all()
-                    self._clearing_selection = False
-                    
-                    # 3. Manually update buttons (grey out transfer buttons)
                     self.on_selection_changed(treeview.get_selection(), pane)
-                    
                     self._rename_candidate_path = None
                     return True
 
@@ -2030,6 +2053,10 @@ class SFTPWindow(Gtk.Window):
 
         menu = Gtk.Menu()
 
+        # ==========================================
+        # 1. GLOBAL ACTIONS (Always available)
+        # ==========================================
+        
         # Search functionality logic based on selection type
         search_item = Gtk.MenuItem(label="Search Here...")
         if paths and len(paths) == 1:
@@ -2053,42 +2080,60 @@ class SFTPWindow(Gtk.Window):
             search_item.set_sensitive(False)
             
         menu.append(search_item)
+        
+        # Create Directory (Can be clicked anywhere, empty space or not)
+        mkdir_item = Gtk.MenuItem(label="Create Directory")
+        mkdir_item.connect("activate", lambda w: self.create_new_directory(pane))
+        menu.append(mkdir_item)
+        
         menu.append(Gtk.SeparatorMenuItem())
 
+        # ==========================================
+        # 2. ITEM ACTIONS (Requires a selection)
+        # ==========================================
         if not empty_space and paths:
+            # Check the first selected item to see if it is the ".." folder
+            iter_ = model.get_iter(paths[0])
+            first_filename = model.get_value(iter_, 1)
+            is_only_dotdot = (len(paths) == 1 and first_filename == "..")
+
+            # --- RENAME ---
             rename_item = Gtk.MenuItem(label="Rename")
-            if len(paths) > 1: rename_item.set_sensitive(False) 
-            else: rename_item.connect("activate", lambda w, p=paths[0]: self.trigger_inline_rename(treeview, p))
+            # Grey out if multiple items are selected OR if the ".." folder is clicked
+            if len(paths) > 1 or first_filename == "..": 
+                rename_item.set_sensitive(False) 
+            else: 
+                rename_item.connect("activate", lambda w, p=paths[0]: self.trigger_inline_rename(treeview, p))
             menu.append(rename_item)
 
+            # --- DELETE ---
             if pane == "local":
                 trash_item = Gtk.MenuItem(label="Move to Trash")
                 trash_item.connect("activate", lambda w: self.start_delete_thread(pane, selected_items, permanent=False))
+                trash_item.set_sensitive(not is_only_dotdot) # Protect the ".." folder
                 menu.append(trash_item)
                 
                 delete_item = Gtk.MenuItem(label="Delete Permanently")
                 delete_item.connect("activate", lambda w: self.start_delete_thread(pane, selected_items, permanent=True))
+                delete_item.set_sensitive(not is_only_dotdot) # Protect the ".." folder
                 menu.append(delete_item)
             else:
                 delete_item = Gtk.MenuItem(label="Delete (Permanent on Remote)")
                 delete_item.connect("activate", lambda w: self.start_delete_thread(pane, selected_items, permanent=True))
+                delete_item.set_sensitive(not is_only_dotdot) # Protect the ".." folder
                 menu.append(delete_item)
                 
             menu.append(Gtk.SeparatorMenuItem()) 
 
-        mkdir_item = Gtk.MenuItem(label="Create Directory")
-        mkdir_item.connect("activate", lambda w: self.create_new_directory(pane))
-        menu.append(mkdir_item)
-        menu.append(Gtk.SeparatorMenuItem()) 
-        
-
-        if not empty_space and paths:
+            # --- UPLOAD / DOWNLOAD ---
             if pane == "local":
                 transfer_item = Gtk.MenuItem(label="Upload to Remote")
                 transfer_item.connect("activate", lambda w: self.start_transfer_thread("local", selected_items, "remote", self.current_remote_dir, "copy", resume=False))
             else:
                 transfer_item = Gtk.MenuItem(label="Download to Local")
                 transfer_item.connect("activate", lambda w: self.start_transfer_thread("remote", selected_items, "local", self.current_local_dir, "copy", resume=False))
+            
+            transfer_item.set_sensitive(not is_only_dotdot) # Protect the ".." folder
             menu.append(transfer_item)
 
         menu.show_all()
