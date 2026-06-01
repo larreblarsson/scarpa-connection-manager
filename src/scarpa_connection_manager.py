@@ -2581,7 +2581,15 @@ class SFTPWindow(Gtk.Window):
                         else: os.remove(path)
                     else:
                         file_to_trash = Gio.File.new_for_path(path)
-                        file_to_trash.trash(None)
+                        try:
+                            file_to_trash.trash(None)
+                        except GLib.Error as e:
+                            # --- THE FIX: Catch the Snap Trash portal limitation ---
+                            error_msg = getattr(e, 'message', str(e))
+                            if "Trash portal failed" in error_msg or "not supported" in error_msg.lower():
+                                raise Exception("Snap sandbox prevents moving files to Trash.\nPlease right-click and use 'Delete Permanently'.")
+                            else:
+                                raise Exception(f"Trash failed: {error_msg}")
                 elif pane == "remote":
                     remote_stat = self.sftp.stat(path)
                     if stat.S_ISDIR(remote_stat.st_mode):
@@ -2596,8 +2604,14 @@ class SFTPWindow(Gtk.Window):
             
             action_done = "permanently deleted" if permanent or pane == "remote" else "moved to Trash"
             GLib.idle_add(self.set_status, f"Successfully {action_done} {len(paths)} item(s).")
+            
         except Exception as e:
-            GLib.idle_add(self.set_status, f"Delete failed: {str(e)}")
+            error_str = str(e)
+            # If it's our Snap error, pop up a nice dialog box so the user understands
+            if "Snap sandbox prevents" in error_str:
+                GLib.idle_add(self.show_error_dialog, "Trash Not Supported", error_str)
+                
+            GLib.idle_add(self.set_status, f"Delete failed: {error_str}")
 
     def set_status(self, message):
         self.statusbar.push(self.context_id, message)

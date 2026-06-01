@@ -1,6 +1,13 @@
+scarpa-connection-manager (1.2.22-35) stable; urgency=medium
+
+  * Fixed Delete error
+  * Updated user_guide.html
+
+ -- Tomas Larsson <larre.b.larsson@gmail.com>  Mon, 1 Jun 2026 15:00:00 +0100  
+
 scarpa-connection-manager (1.2.22-34) stable; urgency=medium
 
-  * tweaking of SFTP GUI look and feal
+  * Tweaking of SFTP GUI look and feel
   
  -- Tomas Larsson <larre.b.larsson@gmail.com>  Sun, 31 May 2026 15:00:00 +0100  
 
