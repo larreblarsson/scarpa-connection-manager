@@ -799,6 +799,7 @@ class SFTPWindow(Gtk.Window):
         self._cancel_transfer = False
         self.search_active = False
         self._cancel_search = False
+        self.hide_snap_trash_warning = False
 
         # --- Slow Double-Click Trackers ---
         self._last_click_time = 0
@@ -2108,10 +2109,11 @@ class SFTPWindow(Gtk.Window):
 
             # --- DELETE ---
             if pane == "local":
-                trash_item = Gtk.MenuItem(label="Move to Trash")
-                trash_item.connect("activate", lambda w: self.start_delete_thread(pane, selected_items, permanent=False))
-                trash_item.set_sensitive(not is_only_dotdot) # Protect the ".." folder
-                menu.append(trash_item)
+                if not IS_SNAP:
+                    trash_item = Gtk.MenuItem(label="Move to Trash")
+                    trash_item.connect("activate", lambda w: self.start_delete_thread(pane, selected_items, permanent=False))
+                    trash_item.set_sensitive(not is_only_dotdot) # Protect the ".." folder
+                    menu.append(trash_item)
                 
                 delete_item = Gtk.MenuItem(label="Delete Permanently")
                 delete_item.connect("activate", lambda w: self.start_delete_thread(pane, selected_items, permanent=True))
@@ -2565,7 +2567,44 @@ class SFTPWindow(Gtk.Window):
                 
             GLib.idle_add(_reset_ui_after_transfer)
 
+    def _show_snap_trash_warning(self):
+        if self.hide_snap_trash_warning:
+            return
+
+        dialog = Gtk.MessageDialog(
+            transient_for=self,
+            flags=0,
+            message_type=Gtk.MessageType.WARNING,
+            buttons=Gtk.ButtonsType.OK,
+            text="Trash Not Supported in Snap"
+        )
+        dialog.format_secondary_markup(
+            "Due to strict security sandboxing, the Snap version cannot move files to the system Trash.\n\n"
+            "To delete local files, you must <b>permanently delete</b> them by pressing <b>Shift + Delete</b>, "
+            "or by using the right-click menu."
+        )
+        
+        # Add the "Do not show again" checkbox directly into the dialog's message area
+        box = dialog.get_message_area()
+        check_button = Gtk.CheckButton(label="Do not show this message again")
+        check_button.set_margin_top(10)
+        box.pack_start(check_button, False, False, 0)
+        
+        dialog.show_all()
+        dialog.run()
+        
+        # Save the user's preference if they checked the box
+        if check_button.get_active():
+            self.hide_snap_trash_warning = True
+            
+        dialog.destroy()
+
     def start_delete_thread(self, pane, paths, permanent=False):
+        # --- THE FIX: Intercept normal Trash attempts in Snap ---
+        if pane == "local" and not permanent and IS_SNAP:
+            self._show_snap_trash_warning()
+            return # Abort the trash operation entirely
+
         action_text = "Permanently deleting" if permanent or pane == "remote" else "Moving to Trash"
         self.set_status(f"{action_text} {len(paths)} item(s)...")
         thread = threading.Thread(target=self._delete_worker, args=(pane, paths, permanent))
@@ -2581,15 +2620,7 @@ class SFTPWindow(Gtk.Window):
                         else: os.remove(path)
                     else:
                         file_to_trash = Gio.File.new_for_path(path)
-                        try:
-                            file_to_trash.trash(None)
-                        except GLib.Error as e:
-                            # --- THE FIX: Catch the Snap Trash portal limitation ---
-                            error_msg = getattr(e, 'message', str(e))
-                            if "Trash portal failed" in error_msg or "not supported" in error_msg.lower():
-                                raise Exception("Snap sandbox prevents moving files to Trash.\nPlease right-click and use 'Delete Permanently'.")
-                            else:
-                                raise Exception(f"Trash failed: {error_msg}")
+                        file_to_trash.trash(None)
                 elif pane == "remote":
                     remote_stat = self.sftp.stat(path)
                     if stat.S_ISDIR(remote_stat.st_mode):
@@ -2606,12 +2637,7 @@ class SFTPWindow(Gtk.Window):
             GLib.idle_add(self.set_status, f"Successfully {action_done} {len(paths)} item(s).")
             
         except Exception as e:
-            error_str = str(e)
-            # If it's our Snap error, pop up a nice dialog box so the user understands
-            if "Snap sandbox prevents" in error_str:
-                GLib.idle_add(self.show_error_dialog, "Trash Not Supported", error_str)
-                
-            GLib.idle_add(self.set_status, f"Delete failed: {error_str}")
+            GLib.idle_add(self.set_status, f"Delete failed: {str(e)}")
 
     def set_status(self, message):
         self.statusbar.push(self.context_id, message)

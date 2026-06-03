@@ -1,3 +1,9 @@
+scarpa-connection-manager (1.2.22-36) stable; urgency=medium
+
+  * Fixed Delete and sandboxed rubbish bin
+
+ -- Tomas Larsson <larre.b.larsson@gmail.com>  Wed, 3 Jun 2026 15:00:00 +0100  
+
 scarpa-connection-manager (1.2.22-35) stable; urgency=medium
 
   * Fixed Delete error
