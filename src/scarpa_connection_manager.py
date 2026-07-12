@@ -2686,6 +2686,9 @@ def get_saved_master_passphrase():
             {"application": "scarpacm", "purpose": "master_passphrase"},
             None
         )
+    except GLib.Error as e:
+        print(f"Keyring is locked or inaccessible: {e.message}")
+        return None
     except Exception as e:
         print(f"Failed to read from Keyring: {e}")
         return None
@@ -2702,6 +2705,22 @@ def save_master_passphrase(password):
             password,
             None
         )
+    except GLib.Error as e:
+        print(f"Keyring locked or inaccessible: {e.message}")
+        # Notify the user visually so they understand why it wasn't saved
+        dialog = Gtk.MessageDialog(
+            transient_for=None,
+            flags=0,
+            message_type=Gtk.MessageType.WARNING,
+            buttons=Gtk.ButtonsType.OK,
+            text="Keyring Inaccessible"
+        )
+        dialog.format_secondary_text(
+            "Could not save the password securely because the system login keyring is locked, cancelled, or inaccessible.\n\n"
+            "Your password will only be remembered for this session."
+        )
+        dialog.run()
+        dialog.destroy()
     except Exception as e:
         print(f"Failed to save to Keyring: {e}")
 
@@ -2714,6 +2733,8 @@ def clear_master_passphrase():
             {"application": "scarpacm", "purpose": "master_passphrase"},
             None
         )
+    except GLib.Error as e:
+        print(f"Keyring locked or inaccessible: {e.message}")
     except Exception as e:
         print(f"Failed to clear Keyring: {e}")
 
