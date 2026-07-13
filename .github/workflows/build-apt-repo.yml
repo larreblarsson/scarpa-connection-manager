@@ -42,8 +42,13 @@ jobs:
       - name: Build Source Package (For Launchpad PPA)
         run: |
           dpkg-buildpackage -S -sa -us -uc
-          # Sign the source .dsc and .changes files securely using your GitHub secret
-          debsign -p "gpg --batch --yes --pinentry-mode loopback --passphrase $GPG_PASSPHRASE" ../*source.changes
+          
+          # Extract the ID of the GPG key we just imported
+          KEY_ID=$(gpg --list-secret-keys --with-colons | awk -F: '/^sec:/ {print $5}')
+          echo "Using GPG Key ID: $KEY_ID"
+          
+          # Force debsign to use this specific key ID (-k"$KEY_ID")
+          debsign -k"$KEY_ID" -p "gpg --batch --yes --pinentry-mode loopback --passphrase $GPG_PASSPHRASE" ../*source.changes
         env:
           GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
 
@@ -83,7 +88,6 @@ jobs:
           APT::FTPArchive::Release::Suite "stable";
           APT::FTPArchive::Release::Codename "stable";
           APT::FTPArchive::Release::Architectures "amd64 all";
-          APT::FTPArchive::Release::Components "main";
           APT::FTPArchive::Release::Description "Scarpa Connection Manager Repository";
           EOF
 
