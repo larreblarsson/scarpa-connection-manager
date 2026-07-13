@@ -1,4 +1,4 @@
-name: Build and Publish APT Repo
+name: Build and Publish APT Repo & PPA
 
 on:
   push:
@@ -16,32 +16,13 @@ jobs:
       - name: Install build dependencies
         run: |
           sudo apt-get update
+          # Added 'dput' to the install list for Launchpad uploads
           sudo apt-get install -y devscripts build-essential debhelper \
             python3-all python3-gi gir1.2-gtk-3.0 gir1.2-vte-2.91 \
-            gnupg apt-utils python3-paramiko dh-python
+            gnupg apt-utils python3-paramiko dh-python dput
 
       - name: Check apt-ftparchive
         run: which apt-ftparchive && apt-ftparchive --version
-
-      - name: Bump Debian changelog version
-        run: |
-          RAW_VERSION=${GITHUB_REF_NAME}
-          VERSION=${RAW_VERSION#v}
-          echo "Using version: $VERSION"
-
-          export DEBFULLNAME="Tomas Larsson"
-          export DEBEMAIL="larre.b.larsson@gmail.com"
-          export EDITOR=true
-          export DEBCHANGE_EDITOR=true
-
-          dch --force-bad-version --changelog debian/changelog \
-              --newversion "${VERSION}-1" --distribution stable "Release ${VERSION}"
-
-          head -n 12 debian/changelog
-
-      - name: Build Debian package
-        run: |
-          dpkg-buildpackage -us -uc
 
       - name: Import GPG key
         run: |
@@ -49,7 +30,29 @@ jobs:
         env:
           GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
 
-      - name: Prepare APT repo
+      # -----------------------------------------------------------------
+      # NOTE: The "Bump Debian changelog version" step has been removed.
+      # This ensures Launchpad uses your manually typed debian/changelog!
+      # -----------------------------------------------------------------
+
+      - name: Build Binary Package (For GitHub Pages & Releases)
+        run: |
+          dpkg-buildpackage -b -us -uc
+
+      - name: Build Source Package (For Launchpad PPA)
+        run: |
+          dpkg-buildpackage -S -sa -us -uc
+          # Sign the source .dsc and .changes files securely using your GitHub secret
+          debsign -p "gpg --batch --yes --pinentry-mode loopback --passphrase $GPG_PASSPHRASE" ../*source.changes
+        env:
+          GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
+
+      - name: Upload to Launchpad PPA
+        run: |
+          # dput automatically knows how to route to ppa.launchpad.net
+          dput ppa:larre-b-larsson/scarpa-connection-manager ../*source.changes
+
+      - name: Prepare APT repo (GitHub Pages)
         run: |
           REPO_DIR=repo
           CODENAME=stable
