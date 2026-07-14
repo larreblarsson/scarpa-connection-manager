@@ -58,25 +58,25 @@ jobs:
           for RELEASE in "${RELEASES[@]}"; do
             echo "--- Processing $RELEASE ---"
             
-            # Backup the original manual changelog
-            cp debian/changelog debian/changelog.bak
+            # 1. Backup the original manual changelog to a SAFE location outside the repo
+            cp debian/changelog /tmp/changelog.safe
             
-            # Append the release codename to the version and set the target distribution
+            # 2. Append the release codename to the version and set the target distribution
             dch -b -v "${BASE_VERSION}~${RELEASE}1" --distribution "$RELEASE" "Automated build for $RELEASE"
             
-            # Build the source package
+            # 3. Build the source package (dh_clean will run here but will ignore /tmp/)
             dpkg-buildpackage -S -sa -us -uc
             
-            # Sign the specific .changes file (Fixed wildcard from _ to ~)
+            # 4. Sign the specific .changes file
             debsign -k"$KEY_ID" -p "gpg --batch --yes --pinentry-mode loopback --passphrase $GPG_PASSPHRASE" ../*~${RELEASE}1_source.changes
             
-            # Upload to the PPA (Fixed wildcard from _ to ~)
+            # 5. Upload to the PPA
             dput ppa:larre-b-larsson/scarpa-connection-manager ../*~${RELEASE}1_source.changes
             
-            # Restore the original changelog for the next iteration
-            mv debian/changelog.bak debian/changelog
+            # 6. Restore the original changelog from the safe location
+            mv /tmp/changelog.safe debian/changelog
             
-            # Clean up the directory so the next build is fresh
+            # 7. Clean up the directory so the next build is fresh
             rm ../*.dsc ../*.tar.* ../*.buildinfo ../*.changes
           done
         env:
