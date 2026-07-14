@@ -48,7 +48,7 @@ jobs:
           # Define your target Ubuntu releases
           RELEASES=("jammy" "noble" "questing" "resolute")
           
-          # Extract your clean manual version from the top of your changelog (e.g., 1.2.22-40)
+          # Extract your clean manual version from the top of your changelog (e.g., 1.2.22-42)
           BASE_VERSION=$(dpkg-parsechangelog -S Version)
           
           # Get the Key ID for signing
@@ -70,8 +70,25 @@ jobs:
             # 4. Sign the specific .changes file
             debsign -k"$KEY_ID" -p "gpg --batch --yes --pinentry-mode loopback --passphrase $GPG_PASSPHRASE" ../*~${RELEASE}1_source.changes
             
-            # 5. Upload to the PPA
-            dput ppa:larre-b-larsson/scarpa-connection-manager ../*~${RELEASE}1_source.changes
+            # 5. Upload to the PPA with a robust retry loop for flaky FTP connections
+            UPLOAD_SUCCESS=false
+            for attempt in {1..5}; do
+              echo "Uploading $RELEASE (Attempt $attempt of 5)..."
+              if dput ppa:larre-b-larsson/scarpa-connection-manager ../*~${RELEASE}1_source.changes; then
+                echo "Successfully uploaded $RELEASE!"
+                UPLOAD_SUCCESS=true
+                break
+              else
+                echo "Launchpad FTP server error (550). Waiting 60 seconds before retrying..."
+                sleep 60
+              fi
+            done
+            
+            # Crash the job if Launchpad is completely down after 5 attempts
+            if [ "$UPLOAD_SUCCESS" = false ]; then
+              echo "Fatal: Failed to upload $RELEASE after 5 attempts."
+              exit 1
+            fi
             
             # 6. Restore the original changelog from the safe location
             mv /tmp/changelog.safe debian/changelog
@@ -79,9 +96,8 @@ jobs:
             # 7. Clean up the directory so the next build is fresh
             rm ../*.dsc ../*.tar.* ../*.buildinfo ../*.changes
             
-            # 8. Pause for 30 seconds to prevent overwhelming Launchpad's FTP server
-            echo "Sleeping for 30 seconds to let Launchpad process..."
-            sleep 30
+            # 8. Brief pause between successful uploads to let Launchpad close the connection gracefully
+            sleep 15
           done
         env:
           GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
