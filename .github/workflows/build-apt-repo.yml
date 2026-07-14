@@ -79,9 +79,9 @@ jobs:
             # 7. Clean up the directory so the next build is fresh
             rm ../*.dsc ../*.tar.* ../*.buildinfo ../*.changes
             
-            # 8. Pause for 15 seconds to prevent overwhelming Launchpad's FTP server
-            echo "Sleeping for 15 seconds to let Launchpad process..."
-            sleep 15
+            # 8. Pause for 30 seconds to prevent overwhelming Launchpad's FTP server
+            echo "Sleeping for 30 seconds to let Launchpad process..."
+            sleep 30
           done
         env:
           GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
