@@ -39,23 +39,44 @@ jobs:
         run: |
           dpkg-buildpackage -b -us -uc
 
-      - name: Build Source Package (For Launchpad PPA)
+      - name: Build and Upload Source Packages for All Releases
         run: |
-          dpkg-buildpackage -S -sa -us -uc
+          # Define your target Ubuntu releases
+          RELEASES=("jammy" "noble" "questing" "resolute")
           
-          # Extract the ID of the GPG key we just imported
+          # Extract your clean manual version from the top of your changelog (e.g., 1.2.22-39)
+          BASE_VERSION=$(dpkg-parsechangelog -S Version)
+          
+          # Get the Key ID for signing
           KEY_ID=$(gpg --list-secret-keys --with-colons | awk -F: '/^sec:/ {print $5}')
           echo "Using GPG Key ID: $KEY_ID"
           
-          # Force debsign to use this specific key ID (-k"$KEY_ID")
-          debsign -k"$KEY_ID" -p "gpg --batch --yes --pinentry-mode loopback --passphrase $GPG_PASSPHRASE" ../*source.changes
+          for RELEASE in "${RELEASES[@]}"; do
+            echo "--- Processing $RELEASE ---"
+            
+            # 1. Backup the original manual changelog
+            cp debian/changelog debian/changelog.bak
+            
+            # 2. Append the release codename to the version and set the target distribution
+            dch -b -v "${BASE_VERSION}~${RELEASE}1" --distribution "$RELEASE" "Automated build for $RELEASE"
+            
+            # 3. Build the source package
+            dpkg-buildpackage -S -sa -us -uc
+            
+            # 4. Sign the specific .changes file generated for this release
+            debsign -k"$KEY_ID" -p "gpg --batch --yes --pinentry-mode loopback --passphrase $GPG_PASSPHRASE" ../*_${RELEASE}1_source.changes
+            
+            # 5. Upload to the PPA
+            dput ppa:larre-b-larsson/scarpa-connection-manager ../*_${RELEASE}1_source.changes
+            
+            # 6. Restore the original changelog for the next iteration
+            mv debian/changelog.bak debian/changelog
+            
+            # 7. Clean up the directory so the next build is fresh (Leaves .deb files untouched!)
+            rm ../*.dsc ../*.tar.* ../*.buildinfo ../*.changes
+          done
         env:
           GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
-
-      - name: Upload to Launchpad PPA
-        run: |
-          # dput automatically knows how to route to ppa.launchpad.net
-          dput ppa:larre-b-larsson/scarpa-connection-manager ../*source.changes
 
       - name: Prepare APT repo (GitHub Pages)
         run: |
