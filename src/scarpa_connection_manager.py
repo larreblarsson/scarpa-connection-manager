@@ -5831,6 +5831,9 @@ class ScarpaConnectionManager(Gtk.Application):
         if cfg.get("rdp_audio", False):
             cmd_parts.append("/sound")
             
+        if cfg.get("rdp_drive", False):  
+            cmd_parts.append("+home-drive")
+                   
         if cfg.get("rdp_cert_ignore", True):
             cmd_parts.append("/cert:ignore")
 
@@ -7466,6 +7469,11 @@ if logger.f: logger.f.close()
         rdp_grid.attach(chk_rdp_cert, 0, rdp_row, 2, 1)
         rdp_row += 1
         
+        # 7. Share Local Drive
+        chk_rdp_drive = Gtk.CheckButton(label="Share Local Home Folder")
+        rdp_grid.attach(chk_rdp_drive, 0, rdp_row, 2, 1)
+        rdp_row += 1
+        
         # --- Pre-fill when editing ---
         if cfg:
             chk_rdp_enable.set_active(cfg.get("rdp_enabled", False))
@@ -7480,6 +7488,7 @@ if logger.f: logger.f.close()
             chk_rdp_clipboard.set_active(cfg.get("rdp_clipboard", True))
             chk_rdp_audio.set_active(cfg.get("rdp_audio", False))
             chk_rdp_cert.set_active(cfg.get("rdp_cert_ignore", True))
+            chk_rdp_drive.set_active(cfg.get("rdp_drive", False))
             
         # ── NEW: Dynamic Greying Out Logic ──
         def update_rdp_sensitivity(*args):
@@ -7489,6 +7498,7 @@ if logger.f: logger.f.close()
             chk_rdp_clipboard.set_sensitive(is_enabled)
             chk_rdp_audio.set_sensitive(is_enabled)
             chk_rdp_cert.set_sensitive(is_enabled)
+            chk_rdp_drive.set_sensitive(is_enabled)
 
         # Trigger the function whenever the checkbox is clicked
         chk_rdp_enable.connect("toggled", update_rdp_sensitivity)
@@ -7551,6 +7561,7 @@ if logger.f: logger.f.close()
                 "rdp_clipboard":   chk_rdp_clipboard.get_active(),
                 "rdp_audio":       chk_rdp_audio.get_active(),
                 "rdp_cert_ignore": chk_rdp_cert.get_active(),
+                "rdp_drive":       chk_rdp_drive.get_active(),
                 "auth_method":  "password" if auth_pw.get_active() else "key_file",
                 "password":     pw_entry.get_text().strip(),
                 "key_file":     key_entry.get_text().strip(),
