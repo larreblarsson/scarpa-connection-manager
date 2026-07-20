@@ -1,3 +1,10 @@
+scarpa-connection-manager (1.2.23-1) resolute; urgency=medium
+
+  * New sub release 23 adding RDP feature
+
+ -- Tomas Larsson <larre.b.larsson@gmail.com>  Mon, 20 Jul 2026 12:00:00 +0100 
+
+
 scarpa-connection-manager (1.2.22-42) resolute; urgency=medium
 
   * New automatic PPA release now including all four Ubutntu releases

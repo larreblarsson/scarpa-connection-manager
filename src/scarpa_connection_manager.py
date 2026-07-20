@@ -2901,6 +2901,7 @@ class ScarpaConnectionManager(Gtk.Application):
             ("ssh",      self.on_ssh),
             ("sftp",     self.on_sftp),
             ("sftpgui",  self.on_sftpgui),
+            ("rdp",      self.on_rdp),
             ("about",    self.on_about),
             ("user_guide", self.on_user_guide),
             ("change_pass", self.on_change_passphrase),
@@ -3206,6 +3207,7 @@ class ScarpaConnectionManager(Gtk.Application):
                 ("SSH",  self.on_ssh),
                 ("SFTP (CLI)", self.on_sftp),
                 ("SFTP (GUI)", self.on_sftpgui),
+                ("RDP",  self.on_rdp),
             ],
             "Help": [
                 ("About", self.on_about),
@@ -3234,7 +3236,9 @@ class ScarpaConnectionManager(Gtk.Application):
                     else:
                         mi = Gtk.MenuItem(label=lbl)
                         mi.connect("activate", lambda w, f=fn: f(None, None))
-                        submenu.append(mi)        
+                        submenu.append(mi)
+                        if top == "Connect" and lbl == "RDP":
+                            self.top_menu_rdp = mi        
 
             menu_bar.append(root)
 
@@ -3332,6 +3336,10 @@ class ScarpaConnectionManager(Gtk.Application):
         """Updates UI state when selection changes, fully supporting Multiple Selection"""
         model, paths = selection.get_selected_rows()
         
+        # --- NEW: Default RDP menu to insensitive ---
+        if hasattr(self, 'top_menu_rdp') and self.top_menu_rdp:
+            self.top_menu_rdp.set_sensitive(False)
+        
         # If nothing is selected, or if we have MULTIPLE items selected, 
         # we don't need to trigger the single-item rename/connect logic.
         if not paths or len(paths) > 1:
@@ -3343,8 +3351,14 @@ class ScarpaConnectionManager(Gtk.Application):
             row_data = model.get_value(tree_iter, 2)
             if row_data and len(row_data) >= 2:
                 typ, item = row_data[0], row_data[1]
-                # (If you have any toolbar buttons to enable/disable based on selection, 
-                # they would be updated here!)
+                
+                # --- NEW: Enable Top Bar RDP only if it's a server with RDP enabled ---
+                if typ == "server":
+                    actual_srv = self.servers[item] if isinstance(item, int) else item
+                    if hasattr(self, 'top_menu_rdp') and self.top_menu_rdp:
+                        self.top_menu_rdp.set_sensitive(actual_srv.get("rdp_enabled", False))
+                # ----------------------------------------------------------------------
+                
         except Exception as e:
             self.log(f"Selection error: {e}")
 
@@ -5754,6 +5768,89 @@ class ScarpaConnectionManager(Gtk.Application):
             sftp_window.show_all()
         except Exception as e:
             self._info(f"Failed to launch SFTP GUI: {e}")
+  
+    def on_rdp(self, action, param):
+        import shutil
+        
+        if param is not None and isinstance(param, int):
+            idx = param
+        else:
+            selection = self.tree.get_selection()
+            model, paths = selection.get_selected_rows()
+            if not paths:
+                return self.show_info_dialog("No Selection", "Select a server first.")
+            if len(paths) > 1:
+                return self.show_info_dialog("Multiple Selection", "Please select exactly ONE server to connect to.")
+                
+            it = model.get_iter(paths[0])
+            node, idx = model.get_value(it, 2)
+            if node != "server":
+                return self.show_info_dialog("Invalid Selection", "Select a server first.")
+    
+        cfg = self.ensure_credentials(idx)
+        if not cfg:
+            print("Launch cancelled (missing credentials or user aborted).")
+            return
+            
+        # Optional: Check if RDP is actually enabled for this server
+        if not cfg.get("rdp_enabled", False):
+            self.show_info_dialog("RDP Not Enabled", "RDP is not enabled for this server.\n\nPlease edit the server settings and check 'Enable RDP connection' in the RDP tab.")
+            return
+       
+        host = cfg.get("host")
+        port = int(cfg.get("rdp_port", 3389)) # Read from the new RDP port setting
+            
+        print(f"Launching RDP session for: {cfg.get('name')}")
+ 
+        user = cfg.get("user", "")
+        password = cfg.get("password", "")
+
+        # Auto-detect FreeRDP version
+        if shutil.which("xfreerdp3"):
+            cmd_base = "xfreerdp3"
+        elif shutil.which("xfreerdp2"):
+            cmd_base = "xfreerdp2"
+        else:
+            cmd_base = "xfreerdp"
+
+        # Base command
+        cmd_parts = [cmd_base, f"/v:{host}:{port}"]
+
+        # Apply settings from the UI
+        res_setting = cfg.get("rdp_res", "Dynamic")
+        if res_setting == "Fullscreen":
+            cmd_parts.append("/f")
+        elif res_setting == "Dynamic":
+            cmd_parts.append("/dynamic-resolution")
+        elif "x" in res_setting:
+            cmd_parts.append(f"/size:{res_setting}")
+
+        if cfg.get("rdp_clipboard", True):
+            cmd_parts.append("+clipboard")
+            
+        if cfg.get("rdp_audio", False):
+            cmd_parts.append("/sound")
+            
+        if cfg.get("rdp_cert_ignore", True):
+            cmd_parts.append("/cert:ignore")
+
+        if user:
+            cmd_parts.append(f"/u:{user}")
+        if password:
+            cmd_parts.append(f"/p:{password}")
+
+        try:
+            subprocess.Popen(
+                cmd_parts,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL
+            )
+            print(f"RDP connection to {host} opened successfully.")
+        except FileNotFoundError:
+            self.show_info_dialog("Missing Dependency", 
+                                  "No RDP engine found.\nPlease install it using:\nsudo apt install freerdp3-x11")
+        except Exception as e:
+            self.show_info_dialog("Launch Failed", f"Failed to launch RDP session:\n{e}")
 
     def _strip_ansi(self, text):
         """
@@ -6408,9 +6505,15 @@ if logger.f: logger.f.close()
 
                 # 1c. Connect SFTP (GUI)
                 mi_sftp_gui = Gtk.MenuItem(label="Connect SFTP (GUI)")
-                # --- FIX IS ON THIS LINE BELOW (Changed to on_sftpgui) ---
                 mi_sftp_gui.connect("activate", self.on_sftpgui, val) 
                 menu.append(mi_sftp_gui)
+                
+                # 1d. Connect RDP
+                mi_rdp = Gtk.MenuItem(label="Connect RDP")
+                mi_rdp.connect("activate", self.on_rdp, val) 
+                actual_srv = self.servers[val] if isinstance(val, int) else val
+                mi_rdp.set_sensitive(actual_srv.get("rdp_enabled", False))
+                menu.append(mi_rdp)
 
                 # Add a separator line to make it look clean
                 menu.append(Gtk.SeparatorMenuItem())
@@ -7314,6 +7417,85 @@ if logger.f: logger.f.close()
                     pal_cb.set_active(pal_idx)
         
         scheme_cb.connect("changed", on_scheme_changed)
+	
+        # ── RDP Tab ──────────────────────────────────────────────────────────
+        rdp_page = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12, margin=12)
+        nb.append_page(rdp_page, Gtk.Label(label="RDP"))
+        
+        rdp_grid = Gtk.Grid(column_spacing=12, row_spacing=8)
+        rdp_page.pack_start(rdp_grid, False, False, 0)
+        
+        rdp_row = 0
+        
+        # 1. Enable Checkbox
+        chk_rdp_enable = Gtk.CheckButton(label="Enable RDP connection for this server")
+        rdp_grid.attach(chk_rdp_enable, 0, rdp_row, 2, 1)
+        rdp_row += 1
+        
+        # 2. Port
+        lbl_rdp_port = Gtk.Label(label="RDP Port:"); lbl_rdp_port.set_halign(Gtk.Align.START)
+        en_rdp_port = Gtk.Entry(); en_rdp_port.set_text("3389")
+        rdp_grid.attach(lbl_rdp_port, 0, rdp_row, 1, 1)
+        rdp_grid.attach(en_rdp_port, 1, rdp_row, 1, 1)
+        rdp_row += 1
+        
+        # 3. Resolution
+        lbl_rdp_res = Gtk.Label(label="Resolution:"); lbl_rdp_res.set_halign(Gtk.Align.START)
+        cb_rdp_res = Gtk.ComboBoxText()
+        for res in ["Dynamic", "Fullscreen", "1920x1080", "1280x720", "1024x768"]:
+            cb_rdp_res.append_text(res)
+        cb_rdp_res.set_active(0) # Default to Dynamic
+        rdp_grid.attach(lbl_rdp_res, 0, rdp_row, 1, 1)
+        rdp_grid.attach(cb_rdp_res, 1, rdp_row, 1, 1)
+        rdp_row += 1
+        
+        # 4. Clipboard
+        chk_rdp_clipboard = Gtk.CheckButton(label="Enable Clipboard Sharing (Copy/Paste)")
+        chk_rdp_clipboard.set_active(True)
+        rdp_grid.attach(chk_rdp_clipboard, 0, rdp_row, 2, 1)
+        rdp_row += 1
+        
+        # 5. Audio
+        chk_rdp_audio = Gtk.CheckButton(label="Redirect Audio to Local Machine")
+        rdp_grid.attach(chk_rdp_audio, 0, rdp_row, 2, 1)
+        rdp_row += 1
+        
+        # 6. Ignore Certificates
+        chk_rdp_cert = Gtk.CheckButton(label="Ignore Certificate Warnings")
+        chk_rdp_cert.set_active(True)
+        rdp_grid.attach(chk_rdp_cert, 0, rdp_row, 2, 1)
+        rdp_row += 1
+        
+        # --- Pre-fill when editing ---
+        if cfg:
+            chk_rdp_enable.set_active(cfg.get("rdp_enabled", False))
+            en_rdp_port.set_text(str(cfg.get("rdp_port", 3389)))
+            
+            saved_res = cfg.get("rdp_res", "Dynamic")
+            try:
+                cb_rdp_res.set_active(["Dynamic", "Fullscreen", "1920x1080", "1280x720", "1024x768"].index(saved_res))
+            except ValueError:
+                cb_rdp_res.set_active(0)
+                
+            chk_rdp_clipboard.set_active(cfg.get("rdp_clipboard", True))
+            chk_rdp_audio.set_active(cfg.get("rdp_audio", False))
+            chk_rdp_cert.set_active(cfg.get("rdp_cert_ignore", True))
+            
+        # ── NEW: Dynamic Greying Out Logic ──
+        def update_rdp_sensitivity(*args):
+            is_enabled = chk_rdp_enable.get_active()
+            en_rdp_port.set_sensitive(is_enabled)
+            cb_rdp_res.set_sensitive(is_enabled)
+            chk_rdp_clipboard.set_sensitive(is_enabled)
+            chk_rdp_audio.set_sensitive(is_enabled)
+            chk_rdp_cert.set_sensitive(is_enabled)
+
+        # Trigger the function whenever the checkbox is clicked
+        chk_rdp_enable.connect("toggled", update_rdp_sensitivity)
+        
+        # Run it once immediately to set the correct initial state when the dialog opens
+        update_rdp_sensitivity()
+        # ─────────────────────────────────────────────────────────────────────
         
         dlg.show_all()
 
@@ -7363,6 +7545,12 @@ if logger.f: logger.f.close()
                 "port":         int(en_port.get_text().strip()),
                 "user":         en_user.get_text().strip(),
                 "folder":       folder_cb.get_active_text(),
+                "rdp_enabled":     chk_rdp_enable.get_active(),
+                "rdp_port":        int(en_rdp_port.get_text().strip() or 3389),
+                "rdp_res":         cb_rdp_res.get_active_text(),
+                "rdp_clipboard":   chk_rdp_clipboard.get_active(),
+                "rdp_audio":       chk_rdp_audio.get_active(),
+                "rdp_cert_ignore": chk_rdp_cert.get_active(),
                 "auth_method":  "password" if auth_pw.get_active() else "key_file",
                 "password":     pw_entry.get_text().strip(),
                 "key_file":     key_entry.get_text().strip(),
