@@ -5831,8 +5831,10 @@ class ScarpaConnectionManager(Gtk.Application):
         if cfg.get("rdp_audio", False):
             cmd_parts.append("/sound")
             
-        if cfg.get("rdp_drive", False):  
-            cmd_parts.append("+home-drive")
+        if cfg.get("rdp_drive", False):
+            # Snaps use a virtualized $HOME. We must target the actual host OS home directory.
+            real_home = os.environ.get('SNAP_REAL_HOME', os.path.expanduser('~'))
+            cmd_parts.append(f"/drive:home,{real_home}")
                    
         if cfg.get("rdp_cert_ignore", True):
             cmd_parts.append("/cert:ignore")

@@ -1,3 +1,9 @@
+scarpa-connection-manager (1.2.23-3) resolute; urgency=medium
+
+  * Fix for SNAP and local home share RDP 
+
+ -- Tomas Larsson <larre.b.larsson@gmail.com>  Mon, 20 Jul 2026 14:00:00 +0100 
+
 scarpa-connection-manager (1.2.23-2) resolute; urgency=medium
 
   * Adding share of local home directory in RDP
