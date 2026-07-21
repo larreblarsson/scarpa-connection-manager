@@ -7961,10 +7961,29 @@ if logger.f: logger.f.close()
         grid.attach(en_user, 1, 2, 1, 1)
 
         grid.attach(Gtk.Label(label="Password:", halign=Gtk.Align.START), 0, 3, 1, 1)
+        
+        # --- NATIVE EMBEDDED EYE ICON LOGIC ---
         en_pw = Gtk.Entry(text=rule_to_edit["password"] if rule_to_edit else "")
         en_pw.set_visibility(False)
         en_pw.set_activates_default(True)
+        
+        # Set the initial eye icon on the right (secondary) side
+        en_pw.set_icon_from_icon_name(Gtk.EntryIconPosition.SECONDARY, "view-reveal-symbolic")
+        en_pw.set_icon_tooltip_text(Gtk.EntryIconPosition.SECONDARY, "Show/Hide Password")
+
+        # Toggle visibility and switch the icon when the eye is clicked
+        def on_pw_icon_press(entry, icon_pos, event):
+            if icon_pos == Gtk.EntryIconPosition.SECONDARY:
+                is_visible = entry.get_visibility()
+                entry.set_visibility(not is_visible)
+                new_icon = "view-conceal-symbolic" if not is_visible else "view-reveal-symbolic"
+                entry.set_icon_from_icon_name(Gtk.EntryIconPosition.SECONDARY, new_icon)
+
+        en_pw.connect("icon-press", on_pw_icon_press)
+        
+        # Attach the entry directly to the grid
         grid.attach(en_pw, 1, 3, 1, 1)
+        # ---------------------------------------
 
         dlg.show_all()
         if dlg.run() == Gtk.ResponseType.OK:
