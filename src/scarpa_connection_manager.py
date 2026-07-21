@@ -26,6 +26,8 @@ import time
 import warnings
 import urllib.parse
 import pexpect
+import socket
+import shlex
 
 from datetime import datetime
 
@@ -5770,8 +5772,7 @@ class ScarpaConnectionManager(Gtk.Application):
             self._info(f"Failed to launch SFTP GUI: {e}")
   
     def on_rdp(self, action, param):
-        import shutil
-        
+         
         if param is not None and isinstance(param, int):
             idx = param
         else:
@@ -5792,20 +5793,119 @@ class ScarpaConnectionManager(Gtk.Application):
             print("Launch cancelled (missing credentials or user aborted).")
             return
             
-        # Optional: Check if RDP is actually enabled for this server
         if not cfg.get("rdp_enabled", False):
-            self.show_info_dialog("RDP Not Enabled", "RDP is not enabled for this server.\n\nPlease edit the server settings and check 'Enable RDP connection' in the RDP tab.")
+            self.show_info_dialog(
+                "RDP Not Enabled", 
+                "RDP is not enabled for this server.\n\nPlease edit the server settings and check 'Enable RDP connection' in the RDP tab."
+            )
             return
        
         host = cfg.get("host")
-        port = int(cfg.get("rdp_port", 3389)) # Read from the new RDP port setting
-            
-        print(f"Launching RDP session for: {cfg.get('name')}")
- 
+        port = int(cfg.get("rdp_port", 3389)) 
         user = cfg.get("user", "")
         password = cfg.get("password", "")
+        jumps_list = cfg.get("rdp_jumps", [])
 
-        # Auto-detect FreeRDP version
+        print(f"Launching RDP session for: {cfg.get('name')}")
+
+        rdp_target_host = host
+        rdp_target_port = port
+        tunnel_script_path = ""
+        ssh_cfg_path = ""
+
+        # --- MULTI-PASSWORD SSH TUNNEL LOGIC ---
+        if isinstance(jumps_list, list) and len(jumps_list) > 0:
+            # 1. Free local port
+            s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            s.bind(('127.0.0.1', 0))
+            local_port = s.getsockname()[1]
+            s.close()
+            
+            rdp_target_host = "127.0.0.1"
+            rdp_target_port = local_port
+            
+            # 2. Extract final destination jump host
+            last_jump = jumps_list[-1]
+            proxy_jumps = jumps_list[:-1]
+            
+            proxy_args = []
+            chain_passwords = []
+            
+            for j in proxy_jumps:
+                proxy_args.append(f"{j['user']}@{j['host']}:{j['port']}")
+                chain_passwords.append(j['password'])
+            
+            chain_passwords.append(last_jump['password'])
+            
+            # 3. Create a temporary strict SSH config file
+            # This forces ALL hops (including jumps) to use password auth and ignore keys
+            ssh_config_content = """Host *
+    PubkeyAuthentication no
+    IdentitiesOnly yes
+    PreferredAuthentications password,keyboard-interactive
+    StrictHostKeyChecking accept-new
+"""
+            tf_ssh = tempfile.NamedTemporaryFile("w", delete=False, suffix=".conf")
+            tf_ssh.write(ssh_config_content)
+            tf_ssh.close()
+            ssh_cfg_path = tf_ssh.name
+
+            proxy_flag = f"-J {','.join(proxy_args)}" if proxy_args else ""
+            
+            # Use -F to apply the strict config file to the entire chain
+            ssh_cmd = f"ssh -F {ssh_cfg_path} -N {proxy_flag} -L {local_port}:{host}:{port} {last_jump['user']}@{last_jump['host']} -p {last_jump['port']}"
+            
+            # 4. Generate a Pexpect script to handle passwords AND Yes/No prompts
+            pexpect_code = f"""import pexpect
+import sys
+import time
+
+cmd = '''{ssh_cmd}'''
+passwords = {chain_passwords}
+
+log_file = open('/tmp/scarpa_rdp_tunnel.log', 'w')
+log_file.write(f"Starting SSH Tunnel Command: {{cmd}}\\n")
+
+child = pexpect.spawn(cmd, encoding='utf-8', logfile=log_file)
+
+pw_idx = 0
+for _ in range(len(passwords) * 3):
+    if pw_idx >= len(passwords):
+        break
+    try:
+        idx = child.expect(['(?i)are you sure you want to continue connecting', '(?i)password:', '(?i)passphrase:', pexpect.EOF, pexpect.TIMEOUT], timeout=15)
+        
+        if idx == 0:
+            child.sendline('yes')
+            log_file.write("\\n[SCARPA] Auto-answered YES to host key.\\n")
+        elif idx in (1, 2):
+            child.sendline(passwords[pw_idx])
+            log_file.write(f"\\n[SCARPA] Sent password {{pw_idx + 1}}/{{len(passwords)}}.\\n")
+            pw_idx += 1
+        else:
+            log_file.write("\\n[SCARPA] Reached EOF or TIMEOUT before sending all passwords.\\n")
+            break
+    except Exception as e:
+        log_file.write(f"\\n[SCARPA] Exception during expect loop: {{e}}\\n")
+        break
+
+log_file.write("\\n[SCARPA] Tunnel initialization complete. Holding open...\\n")
+log_file.flush()
+
+try:
+    while child.isalive():
+        time.sleep(1)
+except KeyboardInterrupt:
+    pass
+
+log_file.write("\\n[SCARPA] Tunnel closed.\\n")
+log_file.close()
+"""
+            tf = tempfile.NamedTemporaryFile("w", delete=False, suffix=".py")
+            tf.write(pexpect_code)
+            tf.close()
+            tunnel_script_path = tf.name
+
         if shutil.which("xfreerdp3"):
             cmd_base = "xfreerdp3"
         elif shutil.which("xfreerdp2"):
@@ -5813,10 +5913,8 @@ class ScarpaConnectionManager(Gtk.Application):
         else:
             cmd_base = "xfreerdp"
 
-        # Base command
-        cmd_parts = [cmd_base, f"/v:{host}:{port}"]
+        cmd_parts = [cmd_base, f"/v:{rdp_target_host}:{rdp_target_port}"]
 
-        # Apply settings from the UI
         res_setting = cfg.get("rdp_res", "Dynamic")
         if res_setting == "Fullscreen":
             cmd_parts.append("/f")
@@ -5825,35 +5923,40 @@ class ScarpaConnectionManager(Gtk.Application):
         elif "x" in res_setting:
             cmd_parts.append(f"/size:{res_setting}")
 
-        if cfg.get("rdp_clipboard", True):
-            cmd_parts.append("+clipboard")
-            
-        if cfg.get("rdp_audio", False):
-            cmd_parts.append("/sound")
-            
+        if cfg.get("rdp_clipboard", True): cmd_parts.append("+clipboard")
+        if cfg.get("rdp_audio", False): cmd_parts.append("/sound")
+        if cfg.get("rdp_cert_ignore", True): cmd_parts.append("/cert:ignore")
+
         if cfg.get("rdp_drive", False):
-            # Snaps use a virtualized $HOME. We must target the actual host OS home directory.
             real_home = os.environ.get('SNAP_REAL_HOME', os.path.expanduser('~'))
             cmd_parts.append(f"/drive:home,{real_home}")
-                   
-        if cfg.get("rdp_cert_ignore", True):
-            cmd_parts.append("/cert:ignore")
 
-        if user:
-            cmd_parts.append(f"/u:{user}")
-        if password:
-            cmd_parts.append(f"/p:{password}")
+        if user: cmd_parts.append(f"/u:{user}")
+        if password: cmd_parts.append(f"/p:{password}")
 
+        # --- EXECUTION ---
         try:
-            subprocess.Popen(
-                cmd_parts,
-                stdout=subprocess.DEVNULL,
-                stderr=subprocess.DEVNULL
-            )
-            print(f"RDP connection to {host} opened successfully.")
+            if tunnel_script_path:
+                print(f"Establishing SSH tunnel via {len(jumps_list)} jump hosts...")
+                freerdp_cmd_str = " ".join(shlex.quote(p) for p in cmd_parts)
+                python_exe = sys.executable
+                
+                # We now clean up BOTH temporary scripts when it closes
+                wrapper_script = f"""
+                {python_exe} {tunnel_script_path} &
+                SSH_PID=$!
+                sleep 6
+                {freerdp_cmd_str}
+                kill $SSH_PID
+                rm -f {tunnel_script_path}
+                rm -f {ssh_cfg_path}
+                """
+                subprocess.Popen(["bash", "-c", wrapper_script], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            else:
+                subprocess.Popen(cmd_parts, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            print("RDP connection launched successfully.")
         except FileNotFoundError:
-            self.show_info_dialog("Missing Dependency", 
-                                  "No RDP engine found.\nPlease install it using:\nsudo apt install freerdp3-x11")
+            self.show_info_dialog("Missing Dependency", "No RDP engine found.\nPlease install it using:\nsudo apt install freerdp3-x11")
         except Exception as e:
             self.show_info_dialog("Launch Failed", f"Failed to launch RDP session:\n{e}")
 
@@ -6358,7 +6461,7 @@ if logger.f: logger.f.close()
             transient_for=parent_window, # Can be None
             modal=True,
             program_name=APP_TITLE,
-            version="1.2.22",
+            version="1.2.23",
             authors=["Copilot, Gemini, Tomas Larsson"],
             artists=["Tomas Larsson"],
             comments="A GTK-based SSH/SFTP session manager.\nRiposa in pace, Aquila di Filottrano. Sarai sempre con noi!"
@@ -7476,6 +7579,55 @@ if logger.f: logger.f.close()
         rdp_grid.attach(chk_rdp_drive, 0, rdp_row, 2, 1)
         rdp_row += 1
         
+        # 8. SSH Jump Hosts (Order matters: Top to Bottom!)
+        lbl_rdp_jumps = Gtk.Label(label="<b>SSH Jump Hosts (Order: Top to Bottom)</b>", use_markup=True)
+        lbl_rdp_jumps.set_halign(Gtk.Align.START)
+        rdp_grid.attach(lbl_rdp_jumps, 0, rdp_row, 2, 1)
+        rdp_row += 1
+
+        rdp_jump_store = Gtk.ListStore(str, int, str, str) # Host, Port, User, Password
+        rdp_jump_view = Gtk.TreeView(model=rdp_jump_store)
+        rdp_jump_view.set_grid_lines(Gtk.TreeViewGridLines.BOTH)
+
+        sw_jumps = Gtk.ScrolledWindow()
+        sw_jumps.set_policy(Gtk.PolicyType.AUTOMATIC, Gtk.PolicyType.AUTOMATIC)
+        sw_jumps.set_size_request(-1, 120)
+        sw_jumps.add(rdp_jump_view)
+        rdp_grid.attach(sw_jumps, 0, rdp_row, 2, 1)
+        rdp_row += 1
+
+        for i, title in enumerate(["Host", "Port", "User"]):
+            renderer = Gtk.CellRendererText()
+            col = Gtk.TreeViewColumn(title, renderer, text=i)
+            rdp_jump_view.append_column(col)
+
+        # Hidden Password column
+        rnd_pw = Gtk.CellRendererText()
+        def _pw_cell(col, cell, model, it, data):
+            pw = model.get_value(it, 3)
+            cell.set_property("text", "*" * len(pw) if pw else "")
+        col_pw = Gtk.TreeViewColumn("Password", rnd_pw)
+        col_pw.set_cell_data_func(rnd_pw, _pw_cell)
+        rdp_jump_view.append_column(col_pw)
+
+        jump_btn_box = Gtk.Box(spacing=6)
+        btn_add_jump = Gtk.Button(label="Add")
+        btn_edit_jump = Gtk.Button(label="Edit")
+        btn_del_jump = Gtk.Button(label="Delete")
+        btn_up_jump = Gtk.Button(); btn_up_jump.add(Gtk.Arrow(arrow_type=Gtk.ArrowType.UP, shadow_type=Gtk.ShadowType.NONE))
+        btn_dn_jump = Gtk.Button(); btn_dn_jump.add(Gtk.Arrow(arrow_type=Gtk.ArrowType.DOWN, shadow_type=Gtk.ShadowType.NONE))
+
+        btn_add_jump.connect("clicked", lambda w: self._add_edit_jump_rule(dlg, rdp_jump_store))
+        btn_edit_jump.connect("clicked", lambda w: self._add_edit_jump_rule(dlg, rdp_jump_store, rdp_jump_view))
+        btn_del_jump.connect("clicked", lambda w: self._delete_selected_from_view(rdp_jump_view, rdp_jump_store))
+        btn_up_jump.connect("clicked", lambda w: self._move_seq_up(rdp_jump_view, rdp_jump_store))
+        btn_dn_jump.connect("clicked", lambda w: self._move_seq_down(rdp_jump_view, rdp_jump_store))
+
+        for b in [btn_add_jump, btn_edit_jump, btn_del_jump, btn_up_jump, btn_dn_jump]:
+            jump_btn_box.pack_start(b, False, False, 0)
+        rdp_grid.attach(jump_btn_box, 0, rdp_row, 2, 1)
+        rdp_row += 1
+
         # --- Pre-fill when editing ---
         if cfg:
             chk_rdp_enable.set_active(cfg.get("rdp_enabled", False))
@@ -7492,7 +7644,13 @@ if logger.f: logger.f.close()
             chk_rdp_cert.set_active(cfg.get("rdp_cert_ignore", True))
             chk_rdp_drive.set_active(cfg.get("rdp_drive", False))
             
-        # ── NEW: Dynamic Greying Out Logic ──
+            # Load stored jumps
+            jumps = cfg.get("rdp_jumps", [])
+            if isinstance(jumps, list):
+                for j in jumps:
+                    rdp_jump_store.append([j.get("host",""), int(j.get("port",22)), j.get("user",""), j.get("password","")])
+            
+        # ── Dynamic Greying Out Logic ──
         def update_rdp_sensitivity(*args):
             is_enabled = chk_rdp_enable.get_active()
             en_rdp_port.set_sensitive(is_enabled)
@@ -7501,11 +7659,11 @@ if logger.f: logger.f.close()
             chk_rdp_audio.set_sensitive(is_enabled)
             chk_rdp_cert.set_sensitive(is_enabled)
             chk_rdp_drive.set_sensitive(is_enabled)
+            rdp_jump_view.set_sensitive(is_enabled)
+            for btn in [btn_add_jump, btn_edit_jump, btn_del_jump, btn_up_jump, btn_dn_jump]:
+                btn.set_sensitive(is_enabled)
 
-        # Trigger the function whenever the checkbox is clicked
         chk_rdp_enable.connect("toggled", update_rdp_sensitivity)
-        
-        # Run it once immediately to set the correct initial state when the dialog opens
         update_rdp_sensitivity()
         # ─────────────────────────────────────────────────────────────────────
         
@@ -7564,6 +7722,7 @@ if logger.f: logger.f.close()
                 "rdp_audio":       chk_rdp_audio.get_active(),
                 "rdp_cert_ignore": chk_rdp_cert.get_active(),
                 "rdp_drive":       chk_rdp_drive.get_active(),
+                "rdp_jumps":       [],
                 "auth_method":  "password" if auth_pw.get_active() else "key_file",
                 "password":     pw_entry.get_text().strip(),
                 "key_file":     key_entry.get_text().strip(),
@@ -7619,7 +7778,15 @@ if logger.f: logger.f.close()
                         "dest_host": rule.get("dest_host", "localhost"),
                         "dest_port": int(rule.get("dest_port", 0)),
                     })
-    
+           
+            for i in range(len(rdp_jump_store)):
+                result["rdp_jumps"].append({
+                    "host": rdp_jump_store[i][0],
+                    "port": rdp_jump_store[i][1],
+                    "user": rdp_jump_store[i][2],
+                    "password": rdp_jump_store[i][3]
+                })    
+                        
             break
     
         dlg.destroy()
@@ -7753,6 +7920,59 @@ if logger.f: logger.f.close()
             it = store.get_iter(p)
             store.remove(it)
 
+    def _add_edit_jump_rule(self, parent, store, view=None):
+        rule_to_edit = None
+        tree_iter = None
+        if view:
+            model, paths = view.get_selection().get_selected_rows()
+            if not paths: return
+            tree_iter = store.get_iter(paths[0])
+            rule_to_edit = {
+                "host": store.get_value(tree_iter, 0),
+                "port": store.get_value(tree_iter, 1),
+                "user": store.get_value(tree_iter, 2),
+                "password": store.get_value(tree_iter, 3)
+            }
+
+        dlg = Gtk.Dialog(
+            title="Edit Jump Host" if rule_to_edit else "Add Jump Host",
+            transient_for=parent, modal=True, use_header_bar=0
+        )
+        dlg.add_buttons(Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL, Gtk.STOCK_OK, Gtk.ResponseType.OK)
+        dlg.set_default_response(Gtk.ResponseType.OK)
+
+        grid = Gtk.Grid(column_spacing=6, row_spacing=6, margin=10)
+        dlg.get_content_area().add(grid)
+
+        grid.attach(Gtk.Label(label="Host:", halign=Gtk.Align.START), 0, 0, 1, 1)
+        en_host = Gtk.Entry(text=rule_to_edit["host"] if rule_to_edit else "")
+        en_host.set_activates_default(True)
+        grid.attach(en_host, 1, 0, 1, 1)
+
+        grid.attach(Gtk.Label(label="Port:", halign=Gtk.Align.START), 0, 1, 1, 1)
+        en_port = Gtk.SpinButton.new_with_range(1, 65535, 1)
+        en_port.set_value(rule_to_edit["port"] if rule_to_edit else 22)
+        en_port.set_activates_default(True)
+        grid.attach(en_port, 1, 1, 1, 1)
+
+        grid.attach(Gtk.Label(label="User:", halign=Gtk.Align.START), 0, 2, 1, 1)
+        en_user = Gtk.Entry(text=rule_to_edit["user"] if rule_to_edit else "")
+        en_user.set_activates_default(True)
+        grid.attach(en_user, 1, 2, 1, 1)
+
+        grid.attach(Gtk.Label(label="Password:", halign=Gtk.Align.START), 0, 3, 1, 1)
+        en_pw = Gtk.Entry(text=rule_to_edit["password"] if rule_to_edit else "")
+        en_pw.set_visibility(False)
+        en_pw.set_activates_default(True)
+        grid.attach(en_pw, 1, 3, 1, 1)
+
+        dlg.show_all()
+        if dlg.run() == Gtk.ResponseType.OK:
+            row = [en_host.get_text().strip(), int(en_port.get_value()), en_user.get_text().strip(), en_pw.get_text()]
+            if tree_iter: store.set(tree_iter, [0,1,2,3], row)
+            else: store.append(row)
+        dlg.destroy()
+
     def _edit_seq_selected(self, view, store, parent):
         model, paths = view.get_selection().get_selected_rows()
         if paths:
@@ -7771,9 +7991,13 @@ if logger.f: logger.f.close()
         row = paths[0][0]
         if row <= 0: return
         it = store.get_iter(paths[0])
-        e, s, h = store.get_value(it, 0), store.get_value(it, 1), store.get_value(it, 2)
+        
+        # Dynamically grab all columns for this specific table
+        num_cols = model.get_n_columns()
+        row_data = [model.get_value(it, i) for i in range(num_cols)]
+        
         store.remove(it)
-        new_it = store.insert(row-1, [e, s, h])
+        new_it = store.insert(row-1, row_data)
         view.get_selection().select_iter(new_it)
 
     def _move_seq_down(self, view, store):
@@ -7782,9 +8006,13 @@ if logger.f: logger.f.close()
         row = paths[0][0]
         if row >= len(store)-1: return
         it = store.get_iter(paths[0])
-        e, s, h = store.get_value(it, 0), store.get_value(it, 1), store.get_value(it, 2)
+        
+        # Dynamically grab all columns for this specific table
+        num_cols = model.get_n_columns()
+        row_data = [model.get_value(it, i) for i in range(num_cols)]
+        
         store.remove(it)
-        new_it = store.insert(row+1, [e, s, h])
+        new_it = store.insert(row+1, row_data)
         view.get_selection().select_iter(new_it)
 
     def _open_seq_editor(self, parent, seq_store, tree_iter):

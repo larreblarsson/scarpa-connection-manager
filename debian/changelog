@@ -1,3 +1,9 @@
+scarpa-connection-manager (1.2.23-4) resolute; urgency=medium
+
+  * Introducing Mutliple SSH Jumps at RDP Session
+
+ -- Tomas Larsson <larre.b.larsson@gmail.com>  Mon, 20 Jul 2026 14:00:00 +0100 
+
 scarpa-connection-manager (1.2.23-3) resolute; urgency=medium
 
   * Fix for SNAP and local home share RDP 
