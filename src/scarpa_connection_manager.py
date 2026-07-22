@@ -6462,7 +6462,7 @@ if logger.f: logger.f.close()
             modal=True,
             program_name=APP_TITLE,
             version="1.2.23",
-            authors=["Copilot, Gemini, Tomas Larsson"],
+            authors=["Gemini, Tomas Larsson"],
             artists=["Tomas Larsson"],
             comments="A GTK-based SSH/SFTP session manager.\nRiposa in pace, Aquila di Filottrano. Sarai sempre con noi!"
         )

@@ -113,6 +113,8 @@
                             <li><a href="#login-actions-tab">2.1.4 Login Actions Tab</a></li>
                             <li><a href="#port-forwarding-tab">2.1.5 Port Forwarding Tab</a></li>
                             <li><a href="#appearance-tab">2.1.6 Appearance Tab</a></li>
+                            <li><a href="#rdp-tab">2.1.7 RDP Tab</a></li>
+                            
                         </ul>
                     </li>
                 </ul>
@@ -334,6 +336,37 @@
             <img src="AppearanceSelectFont.png" alt="Font Selection Dialog">
             <div class="screenshot-caption">Selecting a custom monospace font.</div>
         </div>
+        
+        <h4 id="rdp-tab">2.1.7 RDP Tab</h4>
+        <p>The <strong>RDP</strong> tab enables you to configure Remote Desktop Protocol settings, which is essential if you are connecting to Windows servers or desktop environments. This tab also includes advanced SSH tunneling capabilities for reaching RDP servers hidden behind strict firewalls.</p>
+
+        <div class="screenshot-container">
+            <img src="RDPTab.png" alt="RDP Tab Dialog">
+            <div class="screenshot-caption">Configuring Remote Desktop (RDP) settings and SSH Jump chains.</div>
+        </div>
+
+        <p>Here is a breakdown of the available RDP configuration options:</p>
+        <ul>
+            <li><strong>Enable RDP connection for this server:</strong> This master switch must be checked to activate the RDP functionality for the current server profile.</li>
+            <li><strong>RDP Port:</strong> Defines the network port used for the remote desktop connection (defaults to the standard 3389).</li>
+            <li><strong>Resolution:</strong> Allows you to set a specific window size (e.g., 1920x1080), or choose Dynamic/Fullscreen based on your display preferences.</li>
+            <li><strong>Enable Clipboard Sharing (Copy/Paste):</strong> Seamlessly share copied text and files between your local machine and the remote desktop environment.</li>
+            <li><strong>Redirect Audio to Local Machine:</strong> When enabled, sound generated on the remote machine will be routed and played through your local computer's speakers.</li>
+            <li><strong>Ignore Certificate Warnings:</strong> Bypasses security warnings commonly caused by self-signed RDP certificates on internal networks.</li>
+            <li><strong>Share Local Home Folder:</strong> Securely maps your local machine's home directory so it appears as a readable/writable networked drive inside the remote Windows session.</li>
+        </ul>
+
+        <h5 style="color: var(--primary-color); font-size: 1.1em; margin-top: 1.5em;">SSH Jump Hosts</h5>
+        <p>If your target RDP server is not directly accessible from your local network, you can use the <strong>SSH Jump Hosts</strong> feature to securely tunnel your RDP traffic through one or more intermediate SSH servers.</p>
+
+        <ul>
+            <li><strong>Managing the Chain:</strong> Use the Add, Edit, and Delete buttons to define the SSH servers required to reach your final destination.</li>
+            <li><strong>Order Matters:</strong> The connection sequence executes strictly from <strong>Top to Bottom</strong>. Ensure your chain is ordered correctly using the Up and Down arrow buttons.</li>
+        </ul>
+        
+        <div class="note-box">
+            <strong>Behind the Scenes:</strong> Scarpa automatically builds the complex SSH proxy tunnel in the background, negotiates all required passwords across multiple hops, routes the RDP session securely over the tunnel, and safely tears the tunnel down the moment you close the RDP window.
+        </div>
 	</section>
 
     <section id="organizing">
@@ -496,7 +529,7 @@
                 <div class="screenshot-caption">Connecting via the top menu bar.</div>
             </div>
             <div class="screenshot-container" style="flex: 1; margin: 0;">
-                <img src="ServerActionViaRightClick.png" alt="Connect via Right Click">
+                <img src="ConnectActionViaRightClick.png" alt="Connect via Right Click">
                 <div class="screenshot-caption">Connecting directly via the right-click context menu.</div>
             </div>
         </div>
