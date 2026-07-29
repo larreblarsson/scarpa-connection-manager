@@ -1,4 +1,5 @@
 src/scarpa_connection_manager.py usr/bin/
+src/scarpa_mirror.py usr/bin/
 data/scarpa_connection_manager.desktop usr/share/applications/
 data/icons/hicolor/512x512/apps/scarpa_icon.png usr/share/icons/hicolor/512x512/apps/
 docs/Disclaimer.txt usr/share/scarpa_connection_manager/

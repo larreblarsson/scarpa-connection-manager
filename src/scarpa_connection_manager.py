@@ -2908,7 +2908,8 @@ class ScarpaConnectionManager(Gtk.Application):
             ("user_guide", self.on_user_guide),
             ("change_pass", self.on_change_passphrase),
             ("copy_srv", self.execute_smart_copy),
-            ("paste_srv", self.execute_smart_paste), 
+            ("paste_srv", self.execute_smart_paste),
+            ("mirror",   self.on_mirror_android),
         ):
             act = Gio.SimpleAction.new(name, None)
             act.connect("activate", handler)
@@ -3189,6 +3190,7 @@ class ScarpaConnectionManager(Gtk.Application):
                 ("Export…", self.on_export),
                 ("Default Settings…", self.on_global_settings),                
                 ("Change Passphrase…", self.on_change_passphrase),
+                ("Mirror Android Device...", self.on_mirror_android),
                 ("Quit",    self.on_quit),
             ],
             "Servers": [
@@ -3866,6 +3868,32 @@ class ScarpaConnectionManager(Gtk.Application):
                     
         except Exception as e:
             self.log(f"Error starting D&D: {e}")
+
+    # ── Launch Android Mirroring Tool ─────────────────────────────────────────
+    def on_mirror_android(self, action, param):
+        """Launches the standalone Android mirroring application."""
+        import os
+        import sys
+        import subprocess
+
+        # 1. Get the absolute path to the 'src' directory
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        
+        # 2. Build the exact path to the mirror script
+        mirror_script_path = os.path.join(current_dir, 'scarpa_mirror.py')
+        
+        if not os.path.exists(mirror_script_path):
+            self._error(f"Cannot find the mirroring tool at:\n{mirror_script_path}")
+            return
+            
+        self.log("Launching Android Mirror Manager...")
+        
+        try:
+            # 3. Launch it using the same Python environment (sys.executable)
+            # Popen keeps it detached so your main GUI doesn't freeze!
+            subprocess.Popen([sys.executable, mirror_script_path])
+        except Exception as e:
+            self._error(f"Failed to launch Android Mirror Manager:\n{e}")
 
     # Quit application
     def on_quit(self, action, param):

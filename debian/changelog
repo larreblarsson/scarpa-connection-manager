@@ -1,3 +1,9 @@
+scarpa-connection-manager (1.2.24-1) resolute; urgency=medium
+
+  * Introducing Android Device Mirroring application as a seperate application
+
+ -- Tomas Larsson <larre.b.larsson@gmail.com>  Wed, 29 Jul 2026 16:00:00 +0100 
+
 scarpa-connection-manager (1.2.23-9) resolute; urgency=medium
 
   * Fix for stutter audio on snap version
