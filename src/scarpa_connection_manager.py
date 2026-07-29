@@ -5924,7 +5924,11 @@ log_file.close()
             cmd_parts.append(f"/size:{res_setting}")
 
         if cfg.get("rdp_clipboard", True): cmd_parts.append("+clipboard")
-        if cfg.get("rdp_audio", False): cmd_parts.append("/sound")
+
+        if cfg.get("rdp_audio", False): 
+            cmd_parts.append("/sound:sys:pulse,quality:high,latency:200")
+            cmd_parts.append("/network:wan")
+
         if cfg.get("rdp_cert_ignore", True): cmd_parts.append("/cert:ignore")
 
         if cfg.get("rdp_drive", False):
@@ -5934,7 +5938,6 @@ log_file.close()
         if user: cmd_parts.append(f"/u:{user}")
         if password: cmd_parts.append(f"/p:{password}")
 
-        # --- EXECUTION ---
         try:
             if tunnel_script_path:
                 print(f"Establishing SSH tunnel via {len(jumps_list)} jump hosts...")
