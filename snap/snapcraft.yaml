@@ -66,7 +66,6 @@ parts:
       - freerdp3-x11
       - adb
       - scrcpy
-      - python3-pyqt5
             
     organize:
       data/icons/hicolor/: usr/share/icons/hicolor/
