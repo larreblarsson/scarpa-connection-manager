@@ -149,14 +149,18 @@
                     </li>
                 </ul>
             </li>
-			<li><a href="#installation">8. Installation & Troubleshooting</a></li>
-			
-			
-			
-			
-			
+            <li><a href="#android-mirroring">8. Android Device Mirroring</a>
+                <ul>
+                    <li><a href="#mirror-interface">8.1 The Main Interface</a></li>
+                    <li><a href="#mirror-settings">8.2 Device Settings & Wireless Setup</a></li>
+                    <li><a href="#standalone-mode">8.3 Standalone Mode</a></li>
+                </ul>
+            </li>
+			<li><a href="#installation">9. Installation & Troubleshooting</a></li>
         </ul>
     </div>
+<section id="installation">,
+
     <section id="first-launch">
         <h2>1. First Launch & Security</h2>
         <p>Security is at the core of Scarpa Connection Manager. All of your server configurations, passwords, and connection details are heavily encrypted using Fernet symmetric encryption.</p>
@@ -677,8 +681,60 @@
         </div>
 	
     </section>
+    <section id="android-mirroring">
+        <h2>8. Android Device Mirroring</h2>
+        <p>Scarpa includes a powerful, built-in tool for mirroring and controlling Android devices directly from your desktop. This feature allows you to view your device's screen, use your computer's keyboard and mouse, and even route the device's audio through your local speakers.</p>
+
+        <h3 id="mirror-interface">8.1 The Main Interface</h3>
+        <p>The main mirroring window provides a clean overview of all your saved and currently connected devices.</p>
+
+        <div class="screenshot-container">
+            <img src="AndriodMirrorMain.png" alt="Android Mirror Main Interface">
+            <div class="screenshot-caption">The Saved & Connected Devices list showing active Wi-Fi connections.</div>
+        </div>
+
+        <ul>
+            <li><strong>Auto-Discovery:</strong> The application automatically detects devices plugged in via USB or available over configured Wi-Fi networks in the background.</li>
+            <li><strong>Status Indicators:</strong> Instantly see if a device is connected via USB, Wi-Fi, or if it is currently offline.</li>
+            <li><strong>Connect:</strong> Launches the high-performance mirroring session for the selected device.</li>
+        </ul>
+
+        <h3 id="mirror-settings">8.2 Device Settings & Wireless Setup</h3>
+        <p>Clicking the <strong>Edit</strong> button next to any device opens its configuration panel. Here you can tailor the streaming performance and establish permanent wireless connections.</p>
+
+        <div class="screenshot-container">
+            <img src="AndriodMirrorEdit.png" alt="Android Mirror Device Settings">
+            <div class="screenshot-caption">Configuring device-specific streaming and network settings.</div>
+        </div>
+
+        <ul>
+            <li><strong>Performance Tuning:</strong> Adjust the <strong>Video Bitrate</strong> and <strong>Max Resolution</strong> if you are experiencing lag over a slow Wi-Fi network.</li>
+            <li><strong>Audio & Display:</strong> Choose to relay the device's audio to your PC, and optionally turn off the physical device screen while mirroring to save battery.</li>
+        </ul>
+
+        <h5 style="color: var(--primary-color); font-size: 1.1em; margin-top: 1.5em;">Setting Up a Wireless Connection</h5>
+        <p>You do not need to keep your devices tethered to your PC to use them. Scarpa can seamlessly bridge the ADB connection over your local Wi-Fi network.</p>
+        <ol>
+            <li>Connect your Android device to your computer using a standard USB cable.</li>
+            <li>Ensure the device is connected to the same Wi-Fi network as your computer.</li>
+            <li>Open the device settings and click <strong>Setup Wireless Connection</strong>.</li>
+            <li>Scarpa will automatically configure the required network ports, read the device's IP address, and save it. Once complete, you can safely unplug the USB cable!</li>
+        </ol>
+        
+        <div class="note-box">
+            <strong>Persistent Connections:</strong> Scarpa automatically saves the Wi-Fi IP Address. The background connection manager will attempt to seamlessly reconnect to your saved devices even after you reboot your computer or update the application.
+        </div>
+
+        <h3 id="standalone-mode">8.3 Standalone Mode</h3>
+        <p>If you only need to mirror a device and do not want to open the full SSH/SFTP management interface, you can run this tool entirely on its own! The mirroring application is designed as a standalone module.</p>
+        <p>To launch it separately, simply execute the script directly from your terminal:</p>
+        <div style="background-color: #f4f5f5; padding: 15px; border-radius: 6px; border: 1px solid #e1e4e8; margin-bottom: 25px; font-family: monospace; color: #d73a49;">
+            ./scarpa_mirror.py
+        </div>
+    </section>
+
 	<section id="installation">
-        <h2>8. Installation & Troubleshooting</h2>
+        <h2>9. Installation & Troubleshooting</h2>
         <p>Scarpa Connection Manager is officially hosted on an Ubuntu PPA for the most flexible installation, and the Canonical Snap Store for users who prefer sandboxed containers.</p>
 
         <h3 style="display: flex; align-items: center; gap: 8px;">🚀 Install via Ubuntu PPA (Recommended)</h3>

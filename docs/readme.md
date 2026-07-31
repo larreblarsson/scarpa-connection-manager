@@ -16,8 +16,12 @@
    - [Global Settings](#42-global-settings)
 5. [Importing & Exporting Data](#5-importing--exporting-data)
 6. [Getting Started](#6-getting-started)
-7. [Installation Instructions](#7-installation-instructions)
-8. [Troubleshooting & Dependencies](#8-troubleshooting--dependencies)
+7. [Android Device Mirroring](#7-android-device-mirroring)
+   - [The Main Interface](#71-the-main-interface)
+   - [Device Settings & Wireless Setup](#72-device-settings--wireless-setup)
+   - [Standalone Mode](#73-standalone-mode)
+8. [Installation Instructions](#8-installation-instructions)
+9. [Troubleshooting & Dependencies](#9-troubleshooting--dependencies)
 
 ---
 
@@ -30,34 +34,34 @@ Sensitive data is heavily protected using a robust GnuPG-based local encryption 
 ## 2. Core Features
 
 ### 2.1 Server & Folder Management
-- **Hierarchical Organization:** Structure your servers deeply into categorized folders.
-- **Quick Actions:** Add, edit, and delete servers and folders via intuitive top-bar menus or right-click context menus.
-- **Multi-selection Support:** Use `Ctrl+Click` / `Shift+Click` for batch operations.
-- **Inline Renaming:** Slow double-click any item to rename it directly in the tree view (fast double-click to connect).
-- **Drag-and-Drop:** Seamlessly reorganize your structure by dragging items between folders.
-- **Keyboard Shortcuts:** Quick copy/paste via `Ctrl+C` / `Ctrl+V`, and fast deletion via `Delete`.
-- **Natural Sorting:** Alphanumeric sorting ensures `server10` correctly appears after `server9`.
+* **Hierarchical Organization:** Structure your servers deeply into categorized folders.
+* **Quick Actions:** Add, edit, and delete servers and folders via intuitive top-bar menus or right-click context menus.
+* **Multi-selection Support:** Use `Ctrl+Click` / `Shift+Click` for batch operations.
+* **Inline Renaming:** Slow double-click any item to rename it directly in the tree view (fast double-click to connect).
+* **Drag-and-Drop:** Seamlessly reorganize your structure by dragging items between folders.
+* **Keyboard Shortcuts:** Quick copy/paste via `Ctrl+C` / `Ctrl+V`, and fast deletion via `Delete`.
+* **Natural Sorting:** Alphanumeric sorting ensures `server10` correctly appears after `server9`.
 
 ### 2.2 Connection & Automation
-- **Multi-Protocol:** Direct access to standard SSH interactive terminals, CLI SFTP sessions, and full Windows RDP desktop environments.[cite: 2, 3]
-- **Remote Desktop (RDP):** Native integration for Windows servers including clipboard sharing, audio redirection, dynamic resolution, and local home folder sharing.[cite: 3]
-- **Embedded VTE Terminal:** Features smart copy/paste, context menus, and auto-resize syncing with the remote host.
-- **Authentication Options:** Securely authenticate via standard passwords or Private Key files (e.g., RSA/ED25519).
-- **Automated Login Sequences:** Build robust Expect/Send steps to automate jump-servers or secondary prompts (passwords can be visually hidden as dots in the UI).
-- **Advanced Port Forwarding & Tunnels:** Visually configure Local (-L), Remote (-R), and Dynamic (-D) SOCKS proxies, plus multi-hop SSH Jump Hosts for securely routing RDP traffic.[cite: 2, 3]
+* **Multi-Protocol:** Direct access to standard SSH interactive terminals, CLI SFTP sessions, and full Windows RDP desktop environments.
+* **Remote Desktop (RDP):** Native integration for Windows servers including clipboard sharing, audio redirection, dynamic resolution, and local home folder sharing.
+* **Embedded VTE Terminal:** Features smart copy/paste, context menus, and auto-resize syncing with the remote host.
+* **Authentication Options:** Securely authenticate via standard passwords or Private Key files (e.g., RSA/ED25519).
+* **Automated Login Sequences:** Build robust Expect/Send steps to automate jump-servers or secondary prompts (passwords can be visually hidden as dots in the UI).
+* **Advanced Port Forwarding & Tunnels:** Visually configure Local (-L), Remote (-R), and Dynamic (-D) SOCKS proxies, plus multi-hop SSH Jump Hosts for securely routing RDP traffic.
 
 ### 2.3 Data Management & Logging
-- **GUI Log Pane:** Real-time feedback on application events, transfers, and connection statuses at the bottom of the main window.
-- **Session Logging:** Save permanent, timestamped records of your SSH terminal output to local text files.
+* **GUI Log Pane:** Real-time feedback on application events, transfers, and connection statuses at the bottom of the main window.
+* **Session Logging:** Save permanent, timestamped records of your SSH terminal output to local text files.
 
 ### 2.4 SFTP File Manager
-- **Dual-Pane Interface:** Visually manage files between your Local machine (left) and Remote server (right) side-by-side.
-- **Intuitive Navigation:** Clickable breadcrumb paths and dedicated refresh buttons keep both panes up to date.
-- **Drag & Drop Transfers:** Seamlessly upload, download, or move files by dragging them between panes or directly onto breadcrumb folders.
-- **Smart Transfers (Stop & Resume):** Instantly abort accidental transfers (Red X) or resume partially downloaded/uploaded files to save bandwidth.
-- **Recursive Search:** Search deeply through subfolders with the binoculars tool, and double-click any result to navigate there instantly.
-- **Open Default File Types (Auto-Sync):** Double-click any recognized file (local or remote) to open it in your system's default application (e.g., text editor). Remote files are securely downloaded to a temporary folder, and any saves you make are automatically synced back to the server in the background!
-- **Context Menus & Shortcuts:** Use `Ctrl+C`, `Ctrl+X`, `Ctrl+V`, `Delete` (moves to Trash), and `Shift+Delete` (permanent destruction) to manage files at lightning speed.
+* **Dual-Pane Interface:** Visually manage files between your Local machine (left) and Remote server (right) side-by-side.
+* **Intuitive Navigation:** Clickable breadcrumb paths and dedicated refresh buttons keep both panes up to date.
+* **Drag & Drop Transfers:** Seamlessly upload, download, or move files by dragging them between panes or directly onto breadcrumb folders.
+* **Smart Transfers (Stop & Resume):** Instantly abort accidental transfers (Red X) or resume partially downloaded/uploaded files to save bandwidth.
+* **Recursive Search:** Search deeply through subfolders with the binoculars tool, and double-click any result to navigate there instantly.
+* **Open Default File Types (Auto-Sync):** Double-click any recognized file (local or remote) to open it in your system's default application (e.g., text editor). Remote files are securely downloaded to a temporary folder, and any saves you make are automatically synced back to the server in the background!
+* **Context Menus & Shortcuts:** Use `Ctrl+C`, `Ctrl+X`, `Ctrl+V`, `Delete` (moves to Trash), and `Shift+Delete` (permanent destruction) to manage files at lightning speed.
 
 ---
 
@@ -70,36 +74,36 @@ Sensitive data is heavily protected using a robust GnuPG-based local encryption 
 4. Your passwords and keys are decrypted *only in memory* during active sessions.
 
 ### 3.2 Data Storage Location
-- **Path:** `~/.local/share/scarpa_connection_manager/`
-- **Files:**
-  - `scarpa_cm_settings.json` → Global settings, hash + salt of the Master Passphrase.
-  - `ssh_servers.json.gpg` → Encrypted server configurations.
+* **Path:** `~/.local/share/scarpa_connection_manager/`
+* **Files:**
+  * `scarpa_cm_settings.json` → Global settings, hash + salt of the Master Passphrase.
+  * `ssh_servers.json.gpg` → Encrypted server configurations.
 
 ### 3.3 Changing Your Passphrase
-- Accessible via `File -> Change Passphrase...`
-- Requires your current passphrase to verify identity, then securely re-encrypts the entire database atomically with your new passphrase (generating a fresh cryptographic salt).
+* Accessible via `File -> Change Passphrase...`
+* Requires your current passphrase to verify identity, then securely re-encrypts the entire database atomically with your new passphrase (generating a fresh cryptographic salt).
 
 ---
 
 ## 4. Appearance & Customization
 
 ### 4.1 Per-Server Customization
-- **Color Schemes:** Apply pre-built palettes (Tango, Solarized, Dracula) or pick custom foreground/background colors for specific environments (e.g., Red for Production).
-- **Typography:** Choose custom monospace fonts and sizing per terminal.
-- **Scrollback Buffer:** Define how many lines of history the terminal retains (default: 10,000 lines).
+* **Color Schemes:** Apply pre-built palettes (Tango, Solarized, Dracula) or pick custom foreground/background colors for specific environments (e.g., Red for Production).
+* **Typography:** Choose custom monospace fonts and sizing per terminal.
+* **Scrollback Buffer:** Define how many lines of history the terminal retains (default: 10,000 lines).
 
 ### 4.2 Global Settings
 Accessed via `File -> Global Settings...`, this defines the application's baseline defaults:
-- Sets the default appearance (font, colors, palette) applied automatically to all *new* servers.
-- Defines the default log folder for session logs.
-- Features a "Reset to Defaults" button in the server editor to instantly apply these global settings to any existing server.
+* Sets the default appearance (font, colors, palette) applied automatically to all *new* servers.
+* Defines the default log folder for session logs.
+* Features a "Reset to Defaults" button in the server editor to instantly apply these global settings to any existing server.
 
 ---
 
 ## 5. Importing & Exporting Data
 
-- **Importing (Migrating):** Easily switch to Scarpa by importing existing configurations from other tools like MobaXterm, SecureCRT, and PuTTY via `File -> Import`.
-- **Exporting (Backups):** Export your entire database via `File -> Export`. Choose between a highly secure **GPG Encrypted (.gpg)** file for safe cloud storage, or a **Plaintext JSON (.json)** file (which strips all passwords for security) for scripting and bulk editing.
+* **Importing (Migrating):** Easily switch to Scarpa by importing existing configurations from other tools like MobaXterm, SecureCRT, and PuTTY via `File -> Import`.
+* **Exporting (Backups):** Export your entire database via `File -> Export`. Choose between a highly secure **GPG Encrypted (.gpg)** file for safe cloud storage, or a **Plaintext JSON (.json)** file (which strips all passwords for security) for scripting and bulk editing.
 
 ---
 
@@ -110,7 +114,41 @@ Accessed via `File -> Global Settings...`, this defines the application's baseli
 
 ---
 
-## 7. Installation Instructions
+## 7. Android Device Mirroring
+
+Scarpa includes a powerful, built-in tool for mirroring and controlling Android devices directly from your desktop. This feature allows you to view your device's screen, use your computer's keyboard and mouse, and even route the device's audio through your local speakers.
+
+### 7.1 The Main Interface
+The main mirroring window provides a clean overview of all your saved and currently connected devices.
+* **Auto-Discovery:** The application automatically detects devices plugged in via USB or available over configured Wi-Fi networks. Background network polling is threaded to keep the interface highly responsive.
+* **Status Indicators:** Instantly see if a device is connected via USB, Wi-Fi, or if it is currently offline.
+* **Connect:** Launches the high-performance mirroring session for the selected device utilizing `scrcpy`.
+
+### 7.2 Device Settings & Wireless Setup
+Clicking the **Edit** button next to any device opens its configuration panel. Here you can tailor the streaming performance and establish permanent wireless connections.
+* **Performance Tuning:** Adjust the **Video Bitrate** (e.g., 16M, 8M, 4M, 2M) and **Max Resolution** (e.g., 1920, 1080) if you are experiencing lag over a slow Wi-Fi network.
+* **Audio & Display:** Choose to relay the device's audio to your PC, and optionally turn off the physical device screen while mirroring to save battery.
+
+**Setting Up a Wireless Connection**
+You do not need to keep your devices tethered to your PC to use them. Scarpa can seamlessly bridge the ADB connection over your local Wi-Fi network.
+1. Connect your Android device to your computer using a standard USB cable.
+2. Ensure the device is connected to the same Wi-Fi network as your computer.
+3. Open the device settings and click **Setup Wireless Connection**.
+4. Scarpa will automatically configure the required network ports, read the device's IP address, and save it. Once complete, you can safely unplug the USB cable!
+
+> **Persistent Connections:** Scarpa automatically saves the Wi-Fi IP Address in `~/.local/share/scarpa_connection_manager/mirror_settings.json`. The background connection manager will attempt to seamlessly reconnect to your saved devices even after you reboot your computer or update the application.
+
+### 7.3 Standalone Mode
+If you only need to mirror a device and do not want to open the full SSH/SFTP management interface, you can run this tool entirely on its own! The mirroring application is designed as a standalone module.
+
+To launch it separately, simply execute the script directly from your terminal:
+```bash
+./scarpa_mirror.py
+```
+
+---
+
+## 8. Installation Instructions
 
 Scarpa Connection Manager is officially hosted on an Ubuntu Personal Package Archive (PPA) for easy installation and automatic updates, as well as the Canonical Snap Store.
 
@@ -118,32 +156,38 @@ Scarpa Connection Manager is officially hosted on an Ubuntu Personal Package Arc
 Because this uses standard Debian packaging, the application has unrestricted access to your host file system.
 
 **1. Add the repository:**
-
-    sudo add-apt-repository ppa:larre-b-larsson/scarpa-connection-manager
+```bash
+sudo add-apt-repository ppa:larre-b-larsson/scarpa-connection-manager
+```
 
 **2. Update and install:**
-
-    sudo apt update
-    sudo apt install scarpa-connection-manager
+```bash
+sudo apt update
+sudo apt install scarpa-connection-manager
+```
 
 ### 📦 Install via Snap Store
 For users who prefer sandboxed containers. *(Note: The Snap sandbox restricts application access to hidden dot-folders and areas outside your user home directory).*
 
-    sudo snap install connection-manager-scarpa
+```bash
+sudo snap install connection-manager-scarpa
+```
 
 ---
 
-## 8. Troubleshooting & Dependencies
-- **Lost Master Passphrase:** Because encryption is strictly local, a lost passphrase is unrecoverable. You must delete `~/.local/share/scarpa_connection_manager/` to reset the application.
-- **Dependencies required:**
-  - `python3-gi`
-  - `gir1.2-gtk-3.0`
-  - `gir1.2-vte-2.91`
-  - `python3-paramiko`
-  - `python3-pexpect`  *(Handles the robust terminal automation)*
-  - `gnupg`
-  - `openssh-client`
-  - `freerdp3-x11` *(Required for native RDP protocol and jump-host integrations)*[cite: 2, 3]
+## 9. Troubleshooting & Dependencies
+* **Lost Master Passphrase:** Because encryption is strictly local, a lost passphrase is unrecoverable. You must delete `~/.local/share/scarpa_connection_manager/` to reset the application.
+* **Dependencies required:**
+  * `python3-gi`
+  * `gir1.2-gtk-3.0`
+  * `gir1.2-vte-2.91`
+  * `python3-paramiko`
+  * `python3-pexpect` *(Handles the robust terminal automation)*
+  * `gnupg`
+  * `openssh-client`
+  * `freerdp3-x11` *(Required for native RDP protocol and jump-host integrations)*
+  * `scrcpy` *(Required for Android device mirroring)*
+  * `adb` *(Required for Android bridge and wireless discovery)*
 
 ---
 *Riposa in pace, Aquila di Filottrano. Sarai sempre con noi!*

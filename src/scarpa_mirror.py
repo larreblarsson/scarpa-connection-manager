@@ -289,7 +289,8 @@ class ScarpaMirrorApp(Gtk.Window):
         self.header.pack_end(self.refresh_btn)
 
         self.device_configs = {}
-        self.last_active_map = None  
+        self.last_active_map = None
+        self._is_refreshing = False
         
         self.load_settings()
         self.initUI()
@@ -363,70 +364,93 @@ class ScarpaMirrorApp(Gtk.Window):
         return adb_id 
 
     def refresh_devices(self, force=False):
-        active_map = {} 
+        # Prevent piling up background threads if ADB is running slow
+        if getattr(self, '_is_refreshing', False) and not force:
+            return True # Skip this cycle, but keep the 2-second GTK timer running
+            
+        self._is_refreshing = True
 
-        try:
-            result = subprocess.run(['adb', 'devices'], capture_output=True, text=True, check=True)
-            for line in result.stdout.strip().split('\n')[1:]:
-                if line.strip():
-                    parts = line.split()
-                    if len(parts) >= 2 and parts[1] == 'device':
-                        adb_id = parts[0]
-                        hw_serial = self._get_hardware_serial(adb_id)
-                        
-                        if hw_serial not in active_map:
-                            active_map[hw_serial] = {'usb': None, 'wifi': None}
+        def _fetch_bg():
+            active_map = {} 
+            err_msg = None
+
+            try:
+                # This heavy blocking call now runs safely in the background
+                result = subprocess.run(['adb', 'devices'], capture_output=True, text=True, check=True)
+                for line in result.stdout.strip().split('\n')[1:]:
+                    if line.strip():
+                        parts = line.split()
+                        if len(parts) >= 2 and parts[1] == 'device':
+                            adb_id = parts[0]
+                            hw_serial = self._get_hardware_serial(adb_id)
                             
-                        if ":" in adb_id:
-                            active_map[hw_serial]['wifi'] = adb_id
-                        else:
-                            active_map[hw_serial]['usb'] = adb_id
+                            if hw_serial not in active_map:
+                                active_map[hw_serial] = {'usb': None, 'wifi': None}
+                                
+                            if ":" in adb_id:
+                                active_map[hw_serial]['wifi'] = adb_id
+                            else:
+                                active_map[hw_serial]['usb'] = adb_id
+            except Exception as e:
+                err_msg = str(e)
 
-            if not force and active_map == self.last_active_map:
-                return True # Keep the timer running
+            def _update_ui():
+                self._is_refreshing = False
                 
-            self.last_active_map = active_map
+                if err_msg:
+                    if force:
+                        err_dialog = Gtk.MessageDialog(transient_for=self, message_type=Gtk.MessageType.ERROR, buttons=Gtk.ButtonsType.OK, text="Error")
+                        err_dialog.format_secondary_text(f"Failed to run 'adb devices':\n{err_msg}")
+                        err_dialog.run()
+                        err_dialog.destroy()
+                    return False # Stop idle_add loop
 
-            for hw_serial in active_map:
-                if hw_serial not in self.device_configs:
-                    self.device_configs[hw_serial] = {
-                        'name': '',
-                        'bitrate': 'Default',
-                        'resolution': 'Default',
-                        'screen_off': False,
-                        'audio': True
-                    }
-            if force:
-                self.save_settings()
+                # If nothing changed, we don't need to redraw the UI
+                if not force and active_map == self.last_active_map:
+                    return False 
+                    
+                self.last_active_map = active_map
 
-            # Clear the list
-            for child in self.device_list.get_children():
-                self.device_list.remove(child)
+                for hw_serial in active_map:
+                    if hw_serial not in self.device_configs:
+                        self.device_configs[hw_serial] = {
+                            'name': '',
+                            'bitrate': 'Default',
+                            'resolution': 'Default',
+                            'screen_off': False,
+                            'audio': True
+                        }
+                if force:
+                    self.save_settings()
 
-            sorted_serials = sorted(self.device_configs.keys(), 
-                                    key=lambda s: 0 if s in active_map else 1)
+                # Clear the list
+                for child in self.device_list.get_children():
+                    self.device_list.remove(child)
 
-            for serial in sorted_serials:
-                conf = self.device_configs[serial]
-                active_info = active_map.get(serial)
-                self.add_device_row(serial, conf, active_info)
+                sorted_serials = sorted(self.device_configs.keys(), 
+                                        key=lambda s: 0 if s in active_map else 1)
 
-            if not self.device_configs:
-                lbl = Gtk.Label(label="  No devices found or saved yet. Connect via USB to begin.", xalign=0)
-                lbl.set_margin_top(15)
-                lbl.set_margin_bottom(15)
-                self.device_list.add(lbl)
+                for serial in sorted_serials:
+                    conf = self.device_configs[serial]
+                    active_info = active_map.get(serial)
+                    self.add_device_row(serial, conf, active_info)
 
-            self.device_list.show_all()
+                if not self.device_configs:
+                    lbl = Gtk.Label(label="  No devices found or saved yet. Connect via USB to begin.", xalign=0)
+                    lbl.set_margin_top(15)
+                    lbl.set_margin_bottom(15)
+                    self.device_list.add(lbl)
 
-        except Exception as e:
-            if force:
-                err_dialog = Gtk.MessageDialog(transient_for=self, message_type=Gtk.MessageType.ERROR, buttons=Gtk.ButtonsType.OK, text="Error")
-                err_dialog.format_secondary_text(f"Failed to run 'adb devices':\n{e}")
-                err_dialog.run()
-                err_dialog.destroy()
-                
-        return True # Keep the timer running
+                self.device_list.show_all()
+                return False # Stop idle_add loop so it only runs once
+
+            # Queue the UI update back onto the main GTK thread
+            GLib.idle_add(_update_ui)
+
+        # Launch the fetching logic as a separate process
+        threading.Thread(target=_fetch_bg, daemon=True).start()
+        
+        return True # Tell GLib.timeout_add to keep firing every 2 seconds
 
     def add_device_row(self, hardware_serial, config, active_info):
         row = Gtk.ListBoxRow()
