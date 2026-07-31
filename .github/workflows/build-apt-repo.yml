@@ -46,7 +46,7 @@ jobs:
           export DEBEMAIL="larre.b.larsson@gmail.com"
           
           # Define your target Ubuntu releases
-          RELEASES=("jammy" "noble" "questing" "resolute")
+          RELEASES=("jammy" "noble" "resolute")
           
           # Extract your clean manual version from the top of your changelog (e.g., 1.2.22-42)
           BASE_VERSION=$(dpkg-parsechangelog -S Version)
