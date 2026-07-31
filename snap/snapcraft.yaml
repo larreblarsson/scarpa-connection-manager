@@ -1,6 +1,6 @@
 name: connection-manager-scarpa
 base: core24                           
-version: '1.2.24-2'
+version: '1.2.24-3'
 summary: A slimmed down SSH/SFTP client and connection manager including a SFTP GUI
 description: |
   **SCARPA Connection Manager**  is a SSH client desktop application designed for sysadmins, developers, and power users who need to logically organize and securely manage hundreds of remote servers.
@@ -28,11 +28,12 @@ apps:
     command: src/scarpa_connection_manager.py
     extensions: [gnome]
   mirror:
-    command: bin/scarpa_mirror.py
+    command: src/scarpa_mirror.py
     extensions: [gnome]  
     desktop: data/snap_desktop.desktop
     plugs:
       - network
+      - network-bind
       - home
       - ssh-keys
       - ssh-public-keys
