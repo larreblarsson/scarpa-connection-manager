@@ -4,6 +4,7 @@ import os
 import json
 import time
 import subprocess
+import threading
 import gi
 
 gi.require_version('Gtk', '3.0')
@@ -103,16 +104,14 @@ def apply_css():
 class DeviceSettingsDialog(Gtk.Dialog):
     def __init__(self, hardware_serial, current_config, active_adb_id, parent=None):
         super().__init__(title="Device Settings", transient_for=parent, flags=0)
-        self.set_default_size(420, 370)
+        self.set_default_size(420, 410)
         self.set_modal(True)
-        # Enable HeaderBar for the dialog
         self.set_type_hint(Gdk.WindowTypeHint.DIALOG)
         
         self.hardware_serial = hardware_serial
         self.config = current_config.copy()
         self.active_adb_id = active_adb_id
         
-        # Capture the cancel button so we can shift focus to it later
         self.btn_cancel = self.add_button("Cancel", Gtk.ResponseType.CANCEL)
         self.add_button("Save", Gtk.ResponseType.ACCEPT)
         
@@ -129,7 +128,7 @@ class DeviceSettingsDialog(Gtk.Dialog):
         grid = Gtk.Grid(row_spacing=10, column_spacing=10)
         box.pack_start(grid, False, False, 0)
 
-        # Name Entry - Removed "/ Alias" from the label
+        # Name Entry
         lbl_name = Gtk.Label(label="Device Name:", xalign=0)
         self.name_entry = Gtk.Entry()
         self.name_entry.set_text(self.config.get('name', ''))
@@ -160,14 +159,22 @@ class DeviceSettingsDialog(Gtk.Dialog):
         grid.attach(lbl_res, 0, 2, 1, 1)
         grid.attach(self.res_cb, 1, 2, 1, 1)
 
+        # Saved Wi-Fi IP Entry
+        lbl_ip = Gtk.Label(label="Wi-Fi IP Address:", xalign=0)
+        self.ip_entry = Gtk.Entry()
+        self.ip_entry.set_text(self.config.get('last_ip', ''))
+        self.ip_entry.set_placeholder_text("e.g. 192.168.1.50")
+        grid.attach(lbl_ip, 0, 3, 1, 1)
+        grid.attach(self.ip_entry, 1, 3, 1, 1)
+
         # Checkboxes
         self.screen_off_chk = Gtk.CheckButton(label="Turn device screen off while mirroring")
         self.screen_off_chk.set_active(self.config.get('screen_off', False))
-        grid.attach(self.screen_off_chk, 1, 3, 1, 1)
+        grid.attach(self.screen_off_chk, 1, 4, 1, 1)
 
         self.audio_chk = Gtk.CheckButton(label="Enable Audio Relay")
         self.audio_chk.set_active(self.config.get('audio', True))
-        grid.attach(self.audio_chk, 1, 4, 1, 1)
+        grid.attach(self.audio_chk, 1, 5, 1, 1)
         
         # Wireless Setup Button
         self.wifi_btn = Gtk.Button(label="Setup Wireless Connection")
@@ -186,9 +193,6 @@ class DeviceSettingsDialog(Gtk.Dialog):
         box.pack_start(self.forget_btn, False, False, 0)
         
         self.show_all()
-        
-        # Defer the focus shift until AFTER the dialog fully opens and runs
-        # We also move the cursor to the end of the text just to be safe!
         self.name_entry.set_position(-1)
         GLib.idle_add(self.btn_cancel.grab_focus)
 
@@ -196,6 +200,7 @@ class DeviceSettingsDialog(Gtk.Dialog):
         self.config['name'] = self.name_entry.get_text().strip()
         self.config['bitrate'] = self.bitrate_cb.get_active_text()
         self.config['resolution'] = self.res_cb.get_active_text()
+        self.config['last_ip'] = self.ip_entry.get_text().strip()
         self.config['screen_off'] = self.screen_off_chk.get_active()
         self.config['audio'] = self.audio_chk.get_active()
 
@@ -248,6 +253,8 @@ class DeviceSettingsDialog(Gtk.Dialog):
                 
                 if ip_address:
                     subprocess.run(['adb', 'connect', f'{ip_address}:5555'], check=True)
+                    self.ip_entry.set_text(ip_address)
+                    self.config['last_ip'] = ip_address
                     info_dialog = Gtk.MessageDialog(transient_for=self, message_type=Gtk.MessageType.INFO, buttons=Gtk.ButtonsType.OK, text="Success")
                     info_dialog.format_secondary_text(f"Bridged to {ip_address}:5555.\n\nYou can now safely unplug your USB cable. The list will update automatically!")
                     info_dialog.run()
@@ -276,8 +283,9 @@ class ScarpaMirrorApp(Gtk.Window):
         self.header.set_title("Saved & Connected Devices")
         self.set_titlebar(self.header)
         
+        # Refresh button now triggers background reconnection
         self.refresh_btn = Gtk.Button(label="Manual Refresh")
-        self.refresh_btn.connect("clicked", lambda x: self.refresh_devices(force=True))
+        self.refresh_btn.connect("clicked", lambda x: self.reconnect_saved_devices())
         self.header.pack_end(self.refresh_btn)
 
         self.device_configs = {}
@@ -286,10 +294,33 @@ class ScarpaMirrorApp(Gtk.Window):
         self.load_settings()
         self.initUI()
         
-        self.refresh_devices(force=True)
+        # Attempt background reconnect for saved IPs on startup
+        self.reconnect_saved_devices()
 
         # Replaces QTimer
         GLib.timeout_add(2000, self.refresh_devices)
+
+    def reconnect_saved_devices(self):
+        """Attempts to run 'adb connect IP:5555' in a background thread for all saved IPs."""
+        def _connect_bg():
+            for serial, cfg in list(self.device_configs.items()):
+                ip = cfg.get('last_ip')
+                if ip:
+                    try:
+                        # Short 3s timeout per IP so it doesn't hang if offline
+                        subprocess.run(['adb', 'connect', f'{ip}:5555'], capture_output=True, timeout=3)
+                    except Exception:
+                        pass
+            
+            # We MUST return False here so GLib.idle_add only runs this function once.
+            # Otherwise, because refresh_devices returns True, it creates an infinite loop!
+            def update_ui_once():
+                self.refresh_devices(force=True)
+                return False
+                
+            GLib.idle_add(update_ui_once)
+
+        threading.Thread(target=_connect_bg, daemon=True).start()
 
     def load_settings(self):
         if os.path.exists(CONFIG_FILE):

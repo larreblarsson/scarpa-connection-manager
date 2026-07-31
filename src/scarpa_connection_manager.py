@@ -5960,8 +5960,15 @@ log_file.close()
         if cfg.get("rdp_cert_ignore", True): cmd_parts.append("/cert:ignore")
 
         if cfg.get("rdp_drive", False):
-            real_home = os.environ.get('SNAP_REAL_HOME', os.path.expanduser('~'))
-            cmd_parts.append(f"/drive:home,{real_home}")
+            # Pull the custom path, falling back to home if something goes wrong
+            shared_folder = cfg.get("rdp_drive_path", os.environ.get('SNAP_REAL_HOME', os.path.expanduser('~')))
+            
+            # FreeRDP maps drives as /drive:<NameInsideWindows>,<LocalPath>
+            folder_name = os.path.basename(shared_folder)
+            if not folder_name:
+                folder_name = "shared_drive"
+                
+            cmd_parts.append(f"/drive:{folder_name},{shared_folder}")
 
         if user: cmd_parts.append(f"/u:{user}")
         if password: cmd_parts.append(f"/p:{password}")
@@ -7606,8 +7613,24 @@ if logger.f: logger.f.close()
         rdp_row += 1
         
         # 7. Share Local Drive
-        chk_rdp_drive = Gtk.CheckButton(label="Share Local Home Folder")
-        rdp_grid.attach(chk_rdp_drive, 0, rdp_row, 2, 1)
+        chk_rdp_drive = Gtk.CheckButton(label="Share local folder/drive")
+        
+        rdp_folder_chooser = Gtk.FileChooserButton(
+            title="Select Folder to Share",
+            action=Gtk.FileChooserAction.SELECT_FOLDER
+        )
+        # Default to home directory if it's a new server
+        rdp_folder_chooser.set_current_folder(os.environ.get('SNAP_REAL_HOME', os.path.expanduser('~')))
+        
+        # Link them together so the chooser grays out if the checkbox is off
+        rdp_folder_chooser.set_sensitive(False)
+        chk_rdp_drive.connect(
+            "toggled", 
+            lambda btn: rdp_folder_chooser.set_sensitive(btn.get_active())
+        )
+
+        rdp_grid.attach(chk_rdp_drive, 0, rdp_row, 1, 1)
+        rdp_grid.attach(rdp_folder_chooser, 1, rdp_row, 1, 1)
         rdp_row += 1
         
         # 8. SSH Jump Hosts (Order matters: Top to Bottom!)
@@ -7670,10 +7693,13 @@ if logger.f: logger.f.close()
             except ValueError:
                 cb_rdp_res.set_active(0)
                 
-            chk_rdp_clipboard.set_active(cfg.get("rdp_clipboard", True))
-            chk_rdp_audio.set_active(cfg.get("rdp_audio", False))
             chk_rdp_cert.set_active(cfg.get("rdp_cert_ignore", True))
             chk_rdp_drive.set_active(cfg.get("rdp_drive", False))
+            
+            saved_folder = cfg.get("rdp_drive_path")
+            if saved_folder and os.path.exists(saved_folder):
+                rdp_folder_chooser.set_filename(saved_folder)
+            rdp_folder_chooser.set_sensitive(cfg.get("rdp_drive", False))
             
             # Load stored jumps
             jumps = cfg.get("rdp_jumps", [])
@@ -7690,6 +7716,7 @@ if logger.f: logger.f.close()
             chk_rdp_audio.set_sensitive(is_enabled)
             chk_rdp_cert.set_sensitive(is_enabled)
             chk_rdp_drive.set_sensitive(is_enabled)
+            rdp_folder_chooser.set_sensitive(is_enabled and chk_rdp_drive.get_active())
             rdp_jump_view.set_sensitive(is_enabled)
             for btn in [btn_add_jump, btn_edit_jump, btn_del_jump, btn_up_jump, btn_dn_jump]:
                 btn.set_sensitive(is_enabled)
@@ -7753,6 +7780,7 @@ if logger.f: logger.f.close()
                 "rdp_audio":       chk_rdp_audio.get_active(),
                 "rdp_cert_ignore": chk_rdp_cert.get_active(),
                 "rdp_drive":       chk_rdp_drive.get_active(),
+                "rdp_drive_path":  rdp_folder_chooser.get_filename(),
                 "rdp_jumps":       [],
                 "auth_method":  "password" if auth_pw.get_active() else "key_file",
                 "password":     pw_entry.get_text().strip(),
