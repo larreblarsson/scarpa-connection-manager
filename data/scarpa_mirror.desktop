@@ -1,0 +1,8 @@
+[Desktop Entry]
+Name=Scarpa Android Mirror
+Exec=/usr/bin/scarpa_mirror.py
+Icon=scarpa_mirror_icon
+Terminal=false
+Type=Application
+StartupWMClass=scarpa_mirror.py
+Categories=Utility;Network;

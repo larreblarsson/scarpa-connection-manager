@@ -1,9 +1,0 @@
-[Desktop Entry]
-Name=SCARPA Connection Manager
-Comment=Manage SSH and SFTP Connections
-Exec=connection-manager-scarpa
-Icon=scarpa_icon
-Terminal=false
-Type=Application
-StartupWMClass=scarpa_connection_manager.py
-Categories=Utility;Network;
