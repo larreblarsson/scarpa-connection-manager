@@ -28,6 +28,7 @@ import urllib.parse
 import pexpect
 import socket
 import shlex
+import pty
 
 from datetime import datetime
 
@@ -5843,7 +5844,6 @@ class ScarpaConnectionManager(Gtk.Application):
 
         # --- MULTI-PASSWORD SSH TUNNEL LOGIC ---
         if isinstance(jumps_list, list) and len(jumps_list) > 0:
-            # 1. Free local port
             s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             s.bind(('127.0.0.1', 0))
             local_port = s.getsockname()[1]
@@ -5852,7 +5852,6 @@ class ScarpaConnectionManager(Gtk.Application):
             rdp_target_host = "127.0.0.1"
             rdp_target_port = local_port
             
-            # 2. Extract final destination jump host
             last_jump = jumps_list[-1]
             proxy_jumps = jumps_list[:-1]
             
@@ -5865,8 +5864,6 @@ class ScarpaConnectionManager(Gtk.Application):
             
             chain_passwords.append(last_jump['password'])
             
-            # 3. Create a temporary strict SSH config file
-            # This forces ALL hops (including jumps) to use password auth and ignore keys
             ssh_config_content = """Host *
     PubkeyAuthentication no
     IdentitiesOnly yes
@@ -5880,10 +5877,8 @@ class ScarpaConnectionManager(Gtk.Application):
 
             proxy_flag = f"-J {','.join(proxy_args)}" if proxy_args else ""
             
-            # Use -F to apply the strict config file to the entire chain
             ssh_cmd = f"ssh -F {ssh_cfg_path} -N {proxy_flag} -L {local_port}:{host}:{port} {last_jump['user']}@{last_jump['host']} -p {last_jump['port']}"
             
-            # 4. Generate a Pexpect script to handle passwords AND Yes/No prompts
             pexpect_code = f"""import pexpect
 import sys
 import time
@@ -5942,8 +5937,12 @@ log_file.close()
             cmd_base = "xfreerdp"
 
         cmd_parts = [cmd_base, f"/v:{rdp_target_host}:{rdp_target_port}"]
+        
+        server_name = cfg.get("name", "RDP Session")
+        cmd_parts.append(f"/title:{server_name}")
 
-        res_setting = cfg.get("rdp_res", "Dynamic")
+        res_setting = cfg.get("rdp_res", "Dynamic")        
+                
         if res_setting == "Fullscreen":
             cmd_parts.append("/f")
         elif res_setting == "Dynamic":
@@ -5960,26 +5959,27 @@ log_file.close()
         if cfg.get("rdp_cert_ignore", True): cmd_parts.append("/cert:ignore")
 
         if cfg.get("rdp_drive", False):
-            # Pull the custom path, falling back to home if something goes wrong
             shared_folder = cfg.get("rdp_drive_path", os.environ.get('SNAP_REAL_HOME', os.path.expanduser('~')))
-            
-            # FreeRDP maps drives as /drive:<NameInsideWindows>,<LocalPath>
             folder_name = os.path.basename(shared_folder)
             if not folder_name:
                 folder_name = "shared_drive"
-                
             cmd_parts.append(f"/drive:{folder_name},{shared_folder}")
 
         if user: cmd_parts.append(f"/u:{user}")
         if password: cmd_parts.append(f"/p:{password}")
 
+        # --- Force FreeRDP to output connection status ---
+        cmd_parts.append("/log-level:INFO")
+
         try:
+            # 1. Trick FreeRDP into a pseudo-terminal to defeat C block-buffering!
+            master_fd, slave_fd = pty.openpty()
+
             if tunnel_script_path:
                 print(f"Establishing SSH tunnel via {len(jumps_list)} jump hosts...")
                 freerdp_cmd_str = " ".join(shlex.quote(p) for p in cmd_parts)
                 python_exe = sys.executable
                 
-                # We now clean up BOTH temporary scripts when it closes
                 wrapper_script = f"""
                 {python_exe} {tunnel_script_path} &
                 SSH_PID=$!
@@ -5989,10 +5989,156 @@ log_file.close()
                 rm -f {tunnel_script_path}
                 rm -f {ssh_cfg_path}
                 """
-                subprocess.Popen(["bash", "-c", wrapper_script], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                proc = subprocess.Popen(["bash", "-c", wrapper_script], stdout=slave_fd, stderr=subprocess.STDOUT, close_fds=True)
             else:
-                subprocess.Popen(cmd_parts, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                proc = subprocess.Popen(cmd_parts, stdout=slave_fd, stderr=subprocess.STDOUT, close_fds=True)
+
+            os.close(slave_fd)
             print("RDP connection launched successfully.")
+
+            # 2. Create the Progress Dialog 
+            from gi.repository import GLib
+            
+            prog_dlg = Gtk.Dialog(title="Connecting...")
+            prog_dlg.set_keep_above(True)
+            prog_dlg.set_size_request(350, 100)
+            prog_dlg.set_resizable(False)
+            prog_dlg.add_button("Cancel", Gtk.ResponseType.CANCEL)
+            
+            if hasattr(self, 'win'):
+                self.win.set_sensitive(False)
+            
+            box = prog_dlg.get_content_area()
+            box.set_spacing(15)
+            box.set_margin_top(20); box.set_margin_bottom(20); box.set_margin_start(20); box.set_margin_end(20)
+            
+            hbox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=15)
+            spinner = Gtk.Spinner()
+            spinner.start()
+            spinner.set_size_request(24, 24)
+            lbl = Gtk.Label(label=f"Connecting to <b>{cfg.get('name')}</b>...\nWaiting for server response...", use_markup=True)
+            hbox.pack_start(spinner, False, False, 0)
+            hbox.pack_start(lbl, False, False, 0)
+            box.pack_start(hbox, True, True, 0)
+            
+            show_timer = [None]
+            def _show_dialog():
+                if proc.poll() is None:
+                    prog_dlg.show_all()
+                show_timer[0] = None
+                return False
+            show_timer[0] = GLib.timeout_add(400, _show_dialog)
+            
+            def on_cancel(dialog, response_id):
+                if proc.poll() is None:
+                    proc.terminate()
+                if hasattr(self, 'win'):
+                    self.win.set_sensitive(True)
+                dialog.hide()
+                dialog.destroy()
+            prog_dlg.connect("response", on_cancel)
+
+            # 3. Threaded monitor: STRICT TEXT CLUES ONLY WITH DEBUG PRINTS
+            def monitor_rdp_process(process, server_name, dialog, master_fd):
+                state = {"connected": False, "closed": False, "err_text": ""}
+                error_dialog_pending = {"value": False}
+                
+                def _close_ui(force=False):
+                    if not state["closed"]:
+                        if error_dialog_pending["value"] and not force:
+                            return False
+                            
+                        state["closed"] = True
+                        if show_timer[0] is not None:
+                            try: GLib.source_remove(show_timer[0])
+                            except Exception: pass
+                        
+                        if hasattr(self, 'win'):
+                            self.win.set_sensitive(True)
+                        
+                        dialog.set_transient_for(None)
+                        dialog.hide()
+                        dialog.destroy()
+                    return False
+                
+                def consume_stdout():
+                    try:
+                        while True:
+                            data = os.read(master_fd, 1024)
+                            if not data:
+                                break
+                            
+                            chunk = data.decode('utf-8', errors='replace')
+                            state["err_text"] += chunk
+                            
+                            clues = ["framebuffer format", "loading dynamic virtual channel", "loaded fake backend", "registered ["]
+                            
+                            if not state["connected"]:
+                                for c in clues:
+                                    if c in state["err_text"].lower():
+                                        state["connected"] = True
+                                        GLib.idle_add(_close_ui)
+                                        break
+                    except OSError:
+                        pass
+                    except Exception: 
+                        pass                        
+
+                reader_thread = threading.Thread(target=consume_stdout, daemon=True)
+                reader_thread.start()
+                
+                # --- The Wait Loop ---
+                # Completely removed the line-count rule! It just safely waits.
+                while process.poll() is None:
+                    time.sleep(0.3)
+                            
+                reader_thread.join(timeout=1.0)
+                
+                # --- Smart Exit Logic ---
+                full_log = state["err_text"]
+                clean_exit = (process.returncode == 0)
+                user_cancelled = process.returncode in (-15, -9, 15, 9)
+                
+                failed_to_connect = not state["connected"] and not user_cancelled and not clean_exit
+                crashed_after_connect = state["connected"] and process.returncode not in (0, 130, 131, 255)
+
+                if failed_to_connect or crashed_after_connect:
+                    error_dialog_pending["value"] = True
+                    
+                    if "ERRCONNECT_LOGON_FAILURE" in full_log or "Logon failure" in full_log:
+                        friendly_msg = "Authentication failed! Please double-check your username and password."
+                    elif "ERRCONNECT_CONNECT_FAILED" in full_log or "Connection refused" in full_log or "getaddrinfo" in full_log or "Name or service not known" in full_log or "timeout" in full_log.lower():
+                        friendly_msg = "Could not reach the server. Verify the Host IP, ensure it is powered on, and check if port is correct/open."
+                    elif "ERRCONNECT_SECURITY_NEGO_CONNECT_FAILED" in full_log:
+                        friendly_msg = "Security negotiation failed. The target server might require different Network Level Authentication (NLA) settings."
+                    elif "ERRINFO_SERVER_DENIED_CONNECTION" in full_log:
+                        friendly_msg = "The server explicitly denied the connection. Your user account might not have Remote Desktop permissions."
+                    else:
+                        friendly_msg = "An unexpected connection error occurred or the request timed out."
+
+                    error_lines = [l.strip() for l in full_log.split('\n') if "[ERROR]" in l]
+                    short_raw_error = error_lines[0] if error_lines else "No specific error trace available in the logs."
+
+                    msg = (
+                        f"Failed to connect to: {server_name}\n"
+                        f"Exit Code: {process.returncode}\n\n"
+                        f"Diagnosis:\n{friendly_msg}\n\n"
+                        f"Technical Detail:\n{short_raw_error}"
+                    )
+                    
+                    def _show_error_and_close():
+                        try:
+                            self.show_info_dialog("RDP Connection Error", msg)
+                        finally:
+                            _close_ui(force=True)
+                        return False
+
+                    GLib.idle_add(_show_error_and_close)
+                else:
+                    GLib.idle_add(_close_ui)
+
+            threading.Thread(target=monitor_rdp_process, args=(proc, cfg.get("name"), prog_dlg, master_fd), daemon=True).start()
+
         except FileNotFoundError:
             self.show_info_dialog("Missing Dependency", "No RDP engine found.\nPlease install it using:\nsudo apt install freerdp3-x11")
         except Exception as e:
@@ -7693,6 +7839,8 @@ if logger.f: logger.f.close()
             except ValueError:
                 cb_rdp_res.set_active(0)
                 
+            chk_rdp_clipboard.set_active(cfg.get("rdp_clipboard", True))
+            chk_rdp_audio.set_active(cfg.get("rdp_audio", False))
             chk_rdp_cert.set_active(cfg.get("rdp_cert_ignore", True))
             chk_rdp_drive.set_active(cfg.get("rdp_drive", False))
             

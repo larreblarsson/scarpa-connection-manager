@@ -1,3 +1,9 @@
+scarpa-connection-manager (1.2.24-10) resolute; urgency=medium
+
+  * Adding RDP connection handling 
+
+ -- Tomas Larsson <larre.b.larsson@gmail.com>  Sun, 23 Aug 2026 14:00:00 +0100 
+
 scarpa-connection-manager (1.2.24-9) resolute; urgency=medium
 
   * Edit the icon for the device mirror application 
