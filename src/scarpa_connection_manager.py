@@ -46,6 +46,11 @@ try:
 except (ValueError, ImportError):
     print("ERROR: VTE library not found. Please install gir1.2-vte-2.91", file=sys.stderr)
     sys.exit(1)
+try:
+    gi.require_version('PangoCairo', '1.0')
+    from gi.repository import PangoCairo
+except (ValueError, ImportError):
+    print("WARNING: PangoCairo not found. Printing will be disabled.", file=sys.stderr)
 from gi.repository import Gtk, Gio, GLib, GdkPixbuf
 from gi.repository import Gdk
 from gi.repository import Pango # Moved here as it's used in init_ui_elements
@@ -8433,36 +8438,39 @@ if logger.f: logger.f.close()
             return False
 
     def _on_terminal_button_press(self, terminal, event):
-            """
-            Handles mouse clicks to show a context menu on right-click.
-            """            
-            # Check for Right Click (Button 3)
-            if event.type == Gdk.EventType.BUTTON_PRESS and event.button == 3:
-                menu = Gtk.Menu()
-    
-                # ── Copy Item ──
-                # Only enable "Copy" if there is text selected
-                copy_item = Gtk.MenuItem(label="Copy")
-                if terminal.get_has_selection():
-                    copy_item.set_sensitive(True)
-                    copy_item.connect("activate", lambda w: terminal.copy_clipboard_format(Vte.Format.TEXT))
-                else:
-                    copy_item.set_sensitive(False)
-                menu.append(copy_item)
-    
-                # ── Paste Item ──
-                paste_item = Gtk.MenuItem(label="Paste")
-                paste_item.connect("activate", lambda w: terminal.paste_clipboard())
-                menu.append(paste_item)
-    
-                # ── Show Menu ──
-                menu.show_all()
-                # Use popup_at_pointer for modern GTK (3.22+)
-                menu.popup_at_pointer(event)
-                
-                return True # Return True to stop other handlers from processing the click
+        """
+        Handles mouse clicks to show a context menu on right-click.
+        """            
+        if event.type == Gdk.EventType.BUTTON_PRESS and event.button == 3:
+            menu = Gtk.Menu()
+
+            # ── Copy Item ──
+            copy_item = Gtk.MenuItem(label="Copy")
+            if terminal.get_has_selection():
+                copy_item.set_sensitive(True)
+                copy_item.connect("activate", lambda w: terminal.copy_clipboard_format(Vte.Format.TEXT))
+            else:
+                copy_item.set_sensitive(False)
+            menu.append(copy_item)
+
+            # ── Paste Item ──
+            paste_item = Gtk.MenuItem(label="Paste")
+            paste_item.connect("activate", lambda w: terminal.paste_clipboard())
+            menu.append(paste_item)
+
+            menu.append(Gtk.SeparatorMenuItem())
+
+            # ── Print Item ──
+            print_item = Gtk.MenuItem(label="Print ...")
+            print_item.connect("activate", lambda w: self._print_terminal_content(terminal))
+            menu.append(print_item)
+
+            menu.show_all()
+            menu.popup_at_pointer(event)
             
-            return False
+            return True 
+        
+        return False
 
     # ─── DIALOG HELPERS ────────────────────────────────────────────────────
     def ask_for_password(self, message):
@@ -8491,6 +8499,78 @@ if logger.f: logger.f.close()
         password = entry.get_text() if response == Gtk.ResponseType.OK else None
         dialog.destroy()
         return password
+
+    def _print_terminal_content(self, terminal):
+        """Extracts terminal scrollback cleanly bypassing the VTE get_text() attribute bug."""
+        # 1. Safely extract text to a memory stream
+        stream = Gio.MemoryOutputStream.new_resizable()
+        try:
+            # Vte.WriteFlags.DEFAULT writes the entire scrollback buffer
+            terminal.write_contents_sync(stream, Vte.WriteFlags.DEFAULT, None)
+            stream.close(None)
+            
+            # Extract bytes and decode to string
+            glib_bytes = stream.steal_as_bytes()
+            text_data = glib_bytes.get_data().decode('utf-8', errors='replace')
+        except Exception as e:
+            self.show_info_dialog("Print Error", f"Failed to read terminal contents:\n{e}")
+            return
+
+        if not text_data or not text_data.strip():
+            self.show_info_dialog("Print Empty", "There is no text in the terminal to print.")
+            return
+
+        parent_window = terminal.get_toplevel()
+        print_op = Gtk.PrintOperation()
+        print_op.set_job_name(parent_window.get_title() or "Scarpa Terminal Session")
+        settings = Gtk.PrintSettings()
+        print_op.set_print_settings(settings)
+        print_op.set_embed_page_setup(True)
+        page_setup = Gtk.PageSetup()
+        print_op.set_default_page_setup(page_setup)
+
+        pages = []
+
+        def on_begin_print(operation, context):
+            nonlocal pages
+            layout = context.create_pango_layout()
+            
+            layout.set_font_description(Pango.FontDescription("Monospace 10"))
+            layout.set_width(int(context.get_width() * Pango.SCALE))
+            layout.set_wrap(Pango.WrapMode.WORD_CHAR)
+            
+            layout.set_text("A")
+            _, text_height = layout.get_pixel_size()
+            page_height = context.get_height()
+            
+            lines_per_page = int(page_height / text_height) if text_height > 0 else 50
+            if lines_per_page <= 0: lines_per_page = 50
+            
+            lines = text_data.split('\n')
+            pages = [lines[i:i + lines_per_page] for i in range(0, len(lines), lines_per_page)]
+            
+            operation.set_n_pages(len(pages))
+
+        def on_draw_page(operation, context, page_nr):
+            nonlocal pages
+            layout = context.create_pango_layout()
+            layout.set_font_description(Pango.FontDescription("Monospace 10"))
+            layout.set_width(int(context.get_width() * Pango.SCALE))
+            layout.set_wrap(Pango.WrapMode.WORD_CHAR)
+            
+            layout.set_text('\n'.join(pages[page_nr]))
+            
+            cairo_ctx = context.get_cairo_context()
+            cairo_ctx.set_source_rgb(0, 0, 0) 
+            PangoCairo.show_layout(cairo_ctx, layout)
+
+        print_op.connect("begin-print", on_begin_print)
+        print_op.connect("draw-page", on_draw_page)
+        
+        try:
+            print_op.run(Gtk.PrintOperationAction.PRINT_DIALOG, parent_window)
+        except Exception as e:
+            self.show_info_dialog("Print Engine Error", f"Failed to execute print operation:\n{e}")
 
     def show_info_dialog(self, title, message):
         """Safely shows a GUI info message"""

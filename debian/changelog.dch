@@ -1,8 +1,14 @@
+scarpa-connection-manager (1.2.24-11) UNRELEASED; urgency=medium
+
+  * 
+
+ -- larax <larax@larre.b.larsson@gmail.com>  Sat, 29 Aug 2026 11:15:15 +0200
+
 scarpa-connection-manager (1.2.24-11) resolute; urgency=medium
 
-  * Add terminal session printing to printer.
+  * Adding RDP printing to printer
 
- -- Tomas Larsson <larre.b.larsson@gmail.com>  Sat, 29 Aug 2026 11:00:00 +0200
+ -- Tomas Larsson <larre.b.larsson@gmail.com>  Sat, 29 Aug 2026 11:00:00 +0100 
 
 scarpa-connection-manager (1.2.24-10) resolute; urgency=medium
 
