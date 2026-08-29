@@ -6,498 +6,496 @@ scarpa-connection-manager (1.2.24-11) resolute; urgency=medium
 
 scarpa-connection-manager (1.2.24-10) resolute; urgency=medium
 
-  * Adding RDP connection handling 
+  * Adding RDP connection handling
 
- -- Tomas Larsson <larre.b.larsson@gmail.com>  Sun, 23 Aug 2026 14:00:00 +0100 
+ -- Tomas Larsson <larre.b.larsson@gmail.com>  Sun, 23 Aug 2026 14:00:00 +0100
 
 scarpa-connection-manager (1.2.24-9) resolute; urgency=medium
 
-  * Edit the icon for the device mirror application 
+  * Edit the icon for the device mirror application
 
- -- Tomas Larsson <larre.b.larsson@gmail.com>  Wed, 5 Aug 2026 10:00:00 +0100 
+ -- Tomas Larsson <larre.b.larsson@gmail.com>  Wed, 5 Aug 2026 10:00:00 +0100
 
 scarpa-connection-manager (1.2.24-8) resolute; urgency=medium
 
   * Edit the icon for the device mirror application
 
- -- Tomas Larsson <larre.b.larsson@gmail.com>  Mon, 3 Aug 2026 10:00:00 +0100 
+ -- Tomas Larsson <larre.b.larsson@gmail.com>  Mon, 3 Aug 2026 10:00:00 +0100
 
 scarpa-connection-manager (1.2.24-7) resolute; urgency=medium
 
   * Added an icon for the device mirror application
 
- -- Tomas Larsson <larre.b.larsson@gmail.com>  Mon, 3 Aug 2026 09:00:00 +0100 
+ -- Tomas Larsson <larre.b.larsson@gmail.com>  Mon, 3 Aug 2026 09:00:00 +0100
 
 scarpa-connection-manager (1.2.24-6) resolute; urgency=medium
 
   * Updates to Mirror Applications performance
 
- -- Tomas Larsson <larre.b.larsson@gmail.com>  Fri, 31 Jul 2026 15:00:00 +0100 
+ -- Tomas Larsson <larre.b.larsson@gmail.com>  Fri, 31 Jul 2026 15:00:00 +0100
 
 scarpa-connection-manager (1.2.24-5) resolute; urgency=medium
 
   * Added local drive share in the RDP
   * Fixed save mirror connection after reinstal or reboot local machine
 
- -- Tomas Larsson <larre.b.larsson@gmail.com>  Fri, 31 Jul 2026 11:00:00 +0100 
+ -- Tomas Larsson <larre.b.larsson@gmail.com>  Fri, 31 Jul 2026 11:00:00 +0100
 
 scarpa-connection-manager (1.2.24-4) resolute; urgency=medium
 
   * Bump new release due to changelog error
 
- -- Tomas Larsson <larre.b.larsson@gmail.com>  Fri, 31 Jul 2026 10:00:00 +0100 
+ -- Tomas Larsson <larre.b.larsson@gmail.com>  Fri, 31 Jul 2026 10:00:00 +0100
 
 scarpa-connection-manager (1.2.24-3) resolute; urgency=medium
 
   * Fixing snapcraft.yaml errors
 
- -- Tomas Larsson <larre.b.larsson@gmail.com>  Fri, 31 Jul 2026 09:00:00 +0100 
+ -- Tomas Larsson <larre.b.larsson@gmail.com>  Fri, 31 Jul 2026 09:00:00 +0100
 
 scarpa-connection-manager (1.2.24-2) resolute; urgency=medium
 
   * Improvement in the Android Device Mirroring application
 
- -- Tomas Larsson <larre.b.larsson@gmail.com>  Thu, 30 Jul 2026 15:00:00 +0100 
+ -- Tomas Larsson <larre.b.larsson@gmail.com>  Thu, 30 Jul 2026 15:00:00 +0100
 
 scarpa-connection-manager (1.2.24-1) resolute; urgency=medium
 
   * Introducing Android Device Mirroring application as a seperate application
 
- -- Tomas Larsson <larre.b.larsson@gmail.com>  Wed, 29 Jul 2026 16:00:00 +0100 
+ -- Tomas Larsson <larre.b.larsson@gmail.com>  Wed, 29 Jul 2026 16:00:00 +0100
 
 scarpa-connection-manager (1.2.23-9) resolute; urgency=medium
 
   * Fix for stutter audio on snap version
 
- -- Tomas Larsson <larre.b.larsson@gmail.com>  Wed, 29 Jul 2026 06:00:00 +0100 
+ -- Tomas Larsson <larre.b.larsson@gmail.com>  Wed, 29 Jul 2026 06:00:00 +0100
 
 scarpa-connection-manager (1.2.23-8) resolute; urgency=medium
 
   * Fix for audio on snap version
 
- -- Tomas Larsson <larre.b.larsson@gmail.com>  Tue, 28 Jul 2026 14:00:00 +0100 
+ -- Tomas Larsson <larre.b.larsson@gmail.com>  Tue, 28 Jul 2026 14:00:00 +0100
 
 scarpa-connection-manager (1.2.23-7) resolute; urgency=medium
 
   * Correct copy paste error in readme.md
 
- -- Tomas Larsson <larre.b.larsson@gmail.com>  Fri, 24 Jul 2026 07:00:00 +0100 
+ -- Tomas Larsson <larre.b.larsson@gmail.com>  Fri, 24 Jul 2026 07:00:00 +0100
 
 scarpa-connection-manager (1.2.23-6) resolute; urgency=medium
 
   * Updated user_guide.html and readme.md
 
- -- Tomas Larsson <larre.b.larsson@gmail.com>  Wed, 22 Jul 2026 09:00:00 +0100 
+ -- Tomas Larsson <larre.b.larsson@gmail.com>  Wed, 22 Jul 2026 09:00:00 +0100
 
 scarpa-connection-manager (1.2.23-5) resolute; urgency=medium
 
   * Add show/hide psw in multiple SSH jumps ad RDP session
 
- -- Tomas Larsson <larre.b.larsson@gmail.com>  Mon, 20 Jul 2026 14:00:00 +0100 
+ -- Tomas Larsson <larre.b.larsson@gmail.com>  Mon, 20 Jul 2026 14:00:00 +0100
 
 scarpa-connection-manager (1.2.23-4) resolute; urgency=medium
 
   * Introducing Mutliple SSH Jumps at RDP Session
 
- -- Tomas Larsson <larre.b.larsson@gmail.com>  Mon, 20 Jul 2026 14:00:00 +0100 
+ -- Tomas Larsson <larre.b.larsson@gmail.com>  Mon, 20 Jul 2026 14:00:00 +0100
 
 scarpa-connection-manager (1.2.23-3) resolute; urgency=medium
 
-  * Fix for SNAP and local home share RDP 
+  * Fix for SNAP and local home share RDP
 
- -- Tomas Larsson <larre.b.larsson@gmail.com>  Mon, 20 Jul 2026 14:00:00 +0100 
+ -- Tomas Larsson <larre.b.larsson@gmail.com>  Mon, 20 Jul 2026 14:00:00 +0100
 
 scarpa-connection-manager (1.2.23-2) resolute; urgency=medium
 
   * Adding share of local home directory in RDP
   * Changing to core24 for snap release
 
- -- Tomas Larsson <larre.b.larsson@gmail.com>  Mon, 20 Jul 2026 13:00:00 +0100 
+ -- Tomas Larsson <larre.b.larsson@gmail.com>  Mon, 20 Jul 2026 13:00:00 +0100
 
 scarpa-connection-manager (1.2.23-1) resolute; urgency=medium
 
   * New sub release 23 adding RDP feature
 
- -- Tomas Larsson <larre.b.larsson@gmail.com>  Mon, 20 Jul 2026 12:00:00 +0100 
+ -- Tomas Larsson <larre.b.larsson@gmail.com>  Mon, 20 Jul 2026 12:00:00 +0100
 
 scarpa-connection-manager (1.2.22-42) resolute; urgency=medium
 
   * New automatic PPA release now including all four Ubutntu releases
 
- -- Tomas Larsson <larre.b.larsson@gmail.com>  Tue, 14 Jul 2026 14:00:00 +0100 
+ -- Tomas Larsson <larre.b.larsson@gmail.com>  Tue, 14 Jul 2026 14:00:00 +0100
 
 scarpa-connection-manager (1.2.22-41) resolute; urgency=medium
 
   * New automatic PPA release now including all four Ubutntu releases
 
- -- Tomas Larsson <larre.b.larsson@gmail.com>  Tue, 14 Jul 2026 11:00:00 +0100 
+ -- Tomas Larsson <larre.b.larsson@gmail.com>  Tue, 14 Jul 2026 11:00:00 +0100
 
 scarpa-connection-manager (1.2.22-39) resolute; urgency=medium
 
   * New automatic PPA release workflow version 2
 
- -- Tomas Larsson <larre.b.larsson@gmail.com>  Mon, 13 Jul 2026 14:00:00 +0100  
+ -- Tomas Larsson <larre.b.larsson@gmail.com>  Mon, 13 Jul 2026 14:00:00 +0100
 
 scarpa-connection-manager (1.2.22-38) stable; urgency=medium
 
   * New automatic PPA release workflow
 
- -- Tomas Larsson <larre.b.larsson@gmail.com>  Mon, 13 Jul 2026 14:00:00 +0100  
+ -- Tomas Larsson <larre.b.larsson@gmail.com>  Mon, 13 Jul 2026 14:00:00 +0100
 
 scarpa-connection-manager (1.2.22-37) stable; urgency=medium
 
   * User Interface handling at keyring locked or inaccessible
 
- -- Tomas Larsson <larre.b.larsson@gmail.com>  Sun, 12 Jul 2026 08:00:00 +0100  
+ -- Tomas Larsson <larre.b.larsson@gmail.com>  Sun, 12 Jul 2026 08:00:00 +0100
 
 scarpa-connection-manager (1.2.22-36) stable; urgency=medium
 
   * Fixed Delete and sandboxed rubbish bin
 
- -- Tomas Larsson <larre.b.larsson@gmail.com>  Wed, 3 Jun 2026 15:00:00 +0100  
+ -- Tomas Larsson <larre.b.larsson@gmail.com>  Wed, 3 Jun 2026 15:00:00 +0100
 
 scarpa-connection-manager (1.2.22-35) stable; urgency=medium
 
   * Fixed Delete error
   * Updated user_guide.html
 
- -- Tomas Larsson <larre.b.larsson@gmail.com>  Mon, 1 Jun 2026 15:00:00 +0100  
+ -- Tomas Larsson <larre.b.larsson@gmail.com>  Mon, 1 Jun 2026 15:00:00 +0100
 
 scarpa-connection-manager (1.2.22-34) stable; urgency=medium
 
   * Tweaking of SFTP GUI look and feel
-  
- -- Tomas Larsson <larre.b.larsson@gmail.com>  Sun, 31 May 2026 15:00:00 +0100  
+
+ -- Tomas Larsson <larre.b.larsson@gmail.com>  Sun, 31 May 2026 15:00:00 +0100
 
 scarpa-connection-manager (1.2.22-33) stable; urgency=medium
 
   * More correction in user_guide.html
-  
- -- Tomas Larsson <larre.b.larsson@gmail.com>  Fri, 29 May 2026 14:00:00 +0100  
+
+ -- Tomas Larsson <larre.b.larsson@gmail.com>  Fri, 29 May 2026 14:00:00 +0100
 
 scarpa-connection-manager (1.2.22-32) stable; urgency=medium
 
   * Correction in user_guide.html
-  
- -- Tomas Larsson <larre.b.larsson@gmail.com>  Fri, 29 May 2026 14:00:00 +0100  
+
+ -- Tomas Larsson <larre.b.larsson@gmail.com>  Fri, 29 May 2026 14:00:00 +0100
 
 scarpa-connection-manager (1.2.22-31) stable; urgency=medium
 
   * Updates to snapcraft.yaml
-  
- -- Tomas Larsson <larre.b.larsson@gmail.com>  Thu, 28 May 2026 16:00:00 +0100  
+
+ -- Tomas Larsson <larre.b.larsson@gmail.com>  Thu, 28 May 2026 16:00:00 +0100
 
 scarpa-connection-manager (1.2.22-30) stable; urgency=medium
 
   * Updates to debian install file
-  
- -- Tomas Larsson <larre.b.larsson@gmail.com>  Thu, 28 May 2026 16:00:00 +0100  
+
+ -- Tomas Larsson <larre.b.larsson@gmail.com>  Thu, 28 May 2026 16:00:00 +0100
 
 scarpa-connection-manager (1.2.22-29) stable; urgency=medium
 
   * Fix for SNAP version for remote side file opening and editing
-  
- -- Tomas Larsson <larre.b.larsson@gmail.com>  Thu, 28 May 2026 14:00:00 +0100  
+
+ -- Tomas Larsson <larre.b.larsson@gmail.com>  Thu, 28 May 2026 14:00:00 +0100
 
 scarpa-connection-manager (1.2.22-28) stable; urgency=medium
 
   * Fix for SNAP version for remote side file opening and editing
-  
- -- Tomas Larsson <larre.b.larsson@gmail.com>  Wed, 27 May 2026 14:00:00 +0100  
+
+ -- Tomas Larsson <larre.b.larsson@gmail.com>  Wed, 27 May 2026 14:00:00 +0100
 
 scarpa-connection-manager (1.2.22-27) stable; urgency=medium
 
   * Added remote side file opening and editing
-  
- -- Tomas Larsson <larre.b.larsson@gmail.com>  Wed, 27 May 2026 11:00:00 +0100  
+
+ -- Tomas Larsson <larre.b.larsson@gmail.com>  Wed, 27 May 2026 11:00:00 +0100
 
 scarpa-connection-manager (1.2.22-26) stable; urgency=medium
 
   * Major overhaul of the Login Action Expect function. Swapping old TCL/expect for newwer pexpect
   * Added timeout timer for the Login Action function.
-  * Added show/hide for all passphras fields 
- 
- -- Tomas Larsson <larre.b.larsson@gmail.com>  Tue, 26 May 2026 15:00:00 +0100  
- 
+  * Added show/hide for all passphras fields
+
+ -- Tomas Larsson <larre.b.larsson@gmail.com>  Tue, 26 May 2026 15:00:00 +0100
+
 scarpa-connection-manager (1.2.22-25) stable; urgency=medium
 
   * Updated user_guide.html
- 
- -- Tomas Larsson <larre.b.larsson@gmail.com>  Fri, 22 May 2026 15:00:00 +0100  
+
+ -- Tomas Larsson <larre.b.larsson@gmail.com>  Fri, 22 May 2026 15:00:00 +0100
 
 scarpa-connection-manager (1.2.22-24) stable; urgency=medium
 
   * Bumping version due to missmatch at PPA
- 
- -- Tomas Larsson <larre.b.larsson@gmail.com>  Sun, 17 May 2026 08:00:00 +0100  
+
+ -- Tomas Larsson <larre.b.larsson@gmail.com>  Sun, 17 May 2026 08:00:00 +0100
 
 scarpa-connection-manager (1.2.22-23) stable; urgency=medium
 
   * Fixed and updated PPA check
- 
- -- Tomas Larsson <larre.b.larsson@gmail.com>  Fri, 15 May 2026 09:00:00 +0100  
+
+ -- Tomas Larsson <larre.b.larsson@gmail.com>  Fri, 15 May 2026 09:00:00 +0100
 
 scarpa-connection-manager (1.2.22-22) stable; urgency=medium
 
   * Added PPA check and prompt for metodh to re-enable for users
   * Added hosts check at connect
 
- -- Tomas Larsson <larre.b.larsson@gmail.com>  Fri, 15 May 2026 09:00:00 +0100  
+ -- Tomas Larsson <larre.b.larsson@gmail.com>  Fri, 15 May 2026 09:00:00 +0100
 
 scarpa-connection-manager (1.2.22-21) stable; urgency=medium
 
   * Added hostname, username and password logic at connect
 
- -- Tomas Larsson <larre.b.larsson@gmail.com>  Fri, 15 May 2026 08:00:00 +0100  
+ -- Tomas Larsson <larre.b.larsson@gmail.com>  Fri, 15 May 2026 08:00:00 +0100
 
 scarpa-connection-manager (1.2.22-20) stable; urgency=medium
 
   * Added MobaXterm import
-  * Changed to Scrolldown menybar at import 
-  * Added list all files at Import  
+  * Changed to Scrolldown menybar at import
+  * Added list all files at Import
 
- -- Tomas Larsson <larre.b.larsson@gmail.com>  Tue, 05 May 2026 13:00:00 +0100  
+ -- Tomas Larsson <larre.b.larsson@gmail.com>  Tue, 05 May 2026 13:00:00 +0100
 
 scarpa-connection-manager (1.2.22-19) stable; urgency=medium
 
   * Bumping version due to missmatch at PPA
 
- -- Tomas Larsson <larre.b.larsson@gmail.com>  Sun, 03 May 2026 09:00:00 +0100  
+ -- Tomas Larsson <larre.b.larsson@gmail.com>  Sun, 03 May 2026 09:00:00 +0100
 
 scarpa-connection-manager (1.2.22-18) stable; urgency=medium
 
   * Added import of port forwarding
   * Added import of Putty Linux version
 
- -- Tomas Larsson <larre.b.larsson@gmail.com>  Fri, 01 May 2026 08:00:00 +0100  
+ -- Tomas Larsson <larre.b.larsson@gmail.com>  Fri, 01 May 2026 08:00:00 +0100
 
 scarpa-connection-manager (1.2.22-17) stable; urgency=medium
 
   * Bug fix for Remember me at initial passphrase setting
 
- -- Tomas Larsson <larre.b.larsson@gmail.com>  Tue, 28 Apr 2026 08:00:00 +0100  
- 
+ -- Tomas Larsson <larre.b.larsson@gmail.com>  Tue, 28 Apr 2026 08:00:00 +0100
+
 scarpa-connection-manager (1.2.22-16) stable; urgency=medium
 
   * Code cleanup and fixed deprecate warning
   * Added support for mouse backward buttons in FTP GUI
 
- -- Tomas Larsson <larre.b.larsson@gmail.com>  Mon, 27 Apr 2026 14:00:00 +0100  
+ -- Tomas Larsson <larre.b.larsson@gmail.com>  Mon, 27 Apr 2026 14:00:00 +0100
 
 scarpa-connection-manager (1.2.22-15) stable; urgency=medium
 
   * Fixed Edit Server and Add Server window jump
-  * Added Remember me on password  
+  * Added Remember me on password
 
- -- Tomas Larsson <larre.b.larsson@gmail.com>  Sun, 26 Apr 2026 09:00:00 +0100  
- 
+ -- Tomas Larsson <larre.b.larsson@gmail.com>  Sun, 26 Apr 2026 09:00:00 +0100
+
 scarpa-connection-manager (1.2.22-14) stable; urgency=medium
 
   * Aligning and complete sandboxs checking
 
- -- Tomas Larsson <larre.b.larsson@gmail.com>  Thu, 23 Apr 2026 10:00:00 +0100  
+ -- Tomas Larsson <larre.b.larsson@gmail.com>  Thu, 23 Apr 2026 10:00:00 +0100
 
 scarpa-connection-manager (1.2.22-13) stable; urgency=medium
 
   * reverting back from sandbox
 
- -- Tomas Larsson <larre.b.larsson@gmail.com>  Wed, 22 Apr 2026 16:00:00 +0100  
+ -- Tomas Larsson <larre.b.larsson@gmail.com>  Wed, 22 Apr 2026 16:00:00 +0100
 
 scarpa-connection-manager (1.2.22-12) stable; urgency=medium
 
   * Updates with sandbox chheck for log and command file
-      
+
  -- Tomas Larsson <larre.b.larsson@gmail.com>  Wed, 22 Apr 2026 15:00:00 +0100
 
 scarpa-connection-manager (1.2.22-11) stable; urgency=medium
 
   * Even more updates for SFTP GUI
-      
+
  -- Tomas Larsson <larre.b.larsson@gmail.com>  Wed, 22 Apr 2026 10:00:00 +0100
 
 scarpa-connection-manager (1.2.22-10) stable; urgency=medium
 
   * More updates for SFTP GUI
-      
+
  -- Tomas Larsson <larre.b.larsson@gmail.com>  Wed, 22 Apr 2026 09:00:00 +0100
 
 scarpa-connection-manager (1.2.22-9) stable; urgency=medium
 
   * Fixes for SFTP GUI
-      
+
  -- Tomas Larsson <larre.b.larsson@gmail.com>  Tue, 21 Apr 2026 11:00:00 +0100
 
 scarpa-connection-manager (1.2.22-8) stable; urgency=medium
 
   * Further steamlining of user interface
-      
+
  -- Tomas Larsson <larre.b.larsson@gmail.com>  Mon, 20 Apr 2026 11:00:00 +0100
 
 scarpa-connection-manager (1.2.22-7) stable; urgency=medium
 
   * Updated readme.md and user_guide.html
-      
+
  -- Tomas Larsson <larre.b.larsson@gmail.com>  Sun, 19 Apr 2026 11:00:00 +0100
 
 scarpa-connection-manager (1.2.22-6) stable; urgency=medium
 
   * Fixes for MULTI Select calling
   * Tweaks of GUI behaviour
-      
+
  -- Tomas Larsson <larre.b.larsson@gmail.com>  Sun, 19 Apr 2026 09:00:00 +0100
 
 scarpa-connection-manager (1.2.22-5) stable; urgency=medium
 
   * Fixed user_guide
-      
+
  -- Tomas Larsson <larre.b.larsson@gmail.com>  Thu, 16 Apr 2026 15:00:00 +0100
 
 scarpa-connection-manager (1.2.22-4) stable; urgency=medium
 
   * More Fixes for copy paste and drag and drop logic
-      
+
  -- Tomas Larsson <larre.b.larsson@gmail.com>  Thu, 16 Apr 2026 14:00:00 +0100
 
 scarpa-connection-manager (1.2.22-3) stable; urgency=medium
 
   * Fix for copy paste and drag and drop logic
-      
+
  -- Tomas Larsson <larre.b.larsson@gmail.com>  Wed, 15 Apr 2026 12:00:00 +0100
 
 scarpa-connection-manager (1.2.22-2) stable; urgency=medium
 
   * Fix for SNAP folder handling
-      
+
  -- Tomas Larsson <larre.b.larsson@gmail.com>  Mon, 13 Apr 2026 14:00:00 +0100
 
 scarpa-connection-manager (1.2.22-1) stable; urgency=medium
 
   * Added smart import of server listings
   * Fixed Copy Paste Cut logic
-      
+
  -- Tomas Larsson <larre.b.larsson@gmail.com>  Mon, 13 Apr 2026 13:00:00 +0100
 
 scarpa-connection-manager (1.2.21-16) stable; urgency=medium
 
   * Fixed Github URL in workflow
-    
+
  -- Tomas Larsson <larre.b.larsson@gmail.com>  Fri, 10 Apr 2026 09:00:00 +0100
 
 scarpa-connection-manager (1.2.21-15) stable; urgency=medium
 
   * Updated user_guide.html and readme.md
-    
+
  -- Tomas Larsson <larre.b.larsson@gmail.com>  Fri, 10 Apr 2026 08:00:00 +0100
 
 scarpa-connection-manager (1.2.21-14) stable; urgency=medium
 
   * Fix for window at no passphrase
-    
+
  -- Tomas Larsson <larre.b.larsson@gmail.com>  Fri, 10 Apr 2026 07:00:00 +0100
 
 scarpa-connection-manager (1.2.21-13) stable; urgency=medium
 
   * Align version number
-    
+
  -- Tomas Larsson <larre.b.larsson@gmail.com>  Thu, 09 Apr 2026 15:00:00 +0100
 
 scarpa-connection-manager (1.2.21-12) stable; urgency=medium
 
   * Bump version to bypass Snap Store 500 error
-    
- -- Tomas Larsson <larre.b.larsson@gmail.com>  Thu, 09 Apr 2026 15:00:00 +0100
 
+ -- Tomas Larsson <larre.b.larsson@gmail.com>  Thu, 09 Apr 2026 15:00:00 +0100
 
 scarpa-connection-manager (1.2.21-9) stable; urgency=medium
 
-  * Fix hardcoded SFTP ssh path in Snap sandbox 
+  * Fix hardcoded SFTP ssh path in Snap sandbox
   * Added dynamic file location and fix for known host prompt
-    
+
  -- Tomas Larsson <larre.b.larsson@gmail.com>  Thu, 09 Apr 2026 14:00:00 +0100
 
 scarpa-connection-manager (1.2.21-8) stable; urgency=medium
 
   * Fixed sanboxed check for DL and UL in SFTP_GUI
-    
+
  -- Tomas Larsson <larre.b.larsson@gmail.com>  Thu, 09 Apr 2026 14:00:00 +0100
 
 scarpa-connection-manager (1.2.21-7) stable; urgency=medium
 
   * Fixed GPG1 and core22
-    
+
  -- Tomas Larsson <larre.b.larsson@gmail.com>  Wed, 08 Apr 2026 14:00:00 +0100
 
 scarpa-connection-manager (1.2.21-6) stable; urgency=medium
 
   * Fixed bug at master psw
-    
+
  -- Tomas Larsson <larre.b.larsson@gmail.com>  Wed, 08 Apr 2026 10:00:00 +0100
 
 scarpa-connection-manager (1.2.21-5) stable; urgency=medium
 
   * Updates to Description in control file
-    
+
  -- Tomas Larsson <larre.b.larsson@gmail.com>  Mon, 06 Apr 2026 14:00:00 +0100
 
 scarpa-connection-manager (1.2.21-4) stable; urgency=medium
 
   * Fixed control depends
-    
+
  -- Tomas Larsson <larre.b.larsson@gmail.com>  Mon, 06 Apr 2026 09:00:00 +0100
 
 scarpa-connection-manager (1.2.21-3) stable; urgency=medium
 
   * File Clean Up
-    
+
  -- Tomas Larsson <larre.b.larsson@gmail.com>  Mon, 06 Apr 2026 09:00:00 +0100
 
 scarpa-connection-manager (1.2.21-2) stable; urgency=medium
 
   * Added SNAP packaging and Chameleon Environment detection
-    
+
  -- Tomas Larsson <larre.b.larsson@gmail.com>  Mon, 06 Apr 2026 09:00:00 +0100
 
 scarpa-connection-manager (1.2.21-1) stable; urgency=medium
 
   * Added SNAP packaging and Chameleon Environment detection
-    
- -- Tomas Larsson <larre.b.larsson@gmail.com>  Sun, 05 Apr 2026 09:00:00 +0100
 
+ -- Tomas Larsson <larre.b.larsson@gmail.com>  Sun, 05 Apr 2026 09:00:00 +0100
 
 scarpa-connection-manager (1.2.20-7) stable; urgency=medium
 
   * Changes in User guide and About section
-    
+
  -- Tomas Larsson <larre.b.larsson@gmail.com>  Thu, 02 Apr 2026 16:00:00 +0100
 
 scarpa-connection-manager (1.2.20-6) stable; urgency=medium
 
   * Change in workflow yaml file
-    
+
  -- Tomas Larsson <larre.b.larsson@gmail.com>  Thu, 02 Apr 2026 13:00:00 +0100
- 
+
 scarpa-connection-manager (1.2.20-4) stable; urgency=medium
 
   * Change name of project 4
-    
+
  -- Tomas Larsson <larre.b.larsson@gmail.com>  Thu, 02 Apr 2026 12:00:00 +0100
 
 scarpa-connection-manager (1.2.20-3) stable; urgency=medium
 
   * Fixed workflow
-    
+
  -- Tomas Larsson <larre.b.larsson@gmail.com>  Wed, 01 Apr 2026 12:00:00 +0100
 
 scarpa-connection-manager (1.2.20-2) stable; urgency=medium
 
   * Fixed depends
-    
+
  -- Tomas Larsson <larre.b.larsson@gmail.com>  Wed, 01 Apr 2026 12:00:00 +0100
 
 scarpa-connection-manager (1.2.20-1) stable; urgency=medium
 
   * Renamed project from SCARPA to SCARPA Connection Manager
-    
+
  -- Tomas Larsson <larre.b.larsson@gmail.com>  Wed, 01 Apr 2026 12:00:00 +0100
 
 scarpa-connection-manager (1.2.19-1) stable; urgency=medium
@@ -506,7 +504,7 @@ scarpa-connection-manager (1.2.19-1) stable; urgency=medium
   * Updated drag and drop to also include locally in SFTP GUI
   * Added checking of accidental overwrite of data in SFTP GUI
   * Drag and Drop to folder location list field
-    
+
  -- Tomas Larsson <larre.b.larsson@gmail.com>  Mon, 30 Mar 2026 14:00:00 +0100
 
 scarpa-connection-manager (1.2.18-1) stable; urgency=medium
@@ -514,109 +512,108 @@ scarpa-connection-manager (1.2.18-1) stable; urgency=medium
   * Changed Delete to move to system rubbish bin and Shift+Delete delete permanent
   * Added recursive search function
   * Updated user_guide.html
-  
+
  -- Tomas Larsson <larre.b.larsson@gmail.com>  Fri, 27 Mar 2026 09:00:00 +0100
 
 scarpa-connection-manager (1.2.17-2) stable; urgency=medium
 
   * Changes in Depends
-  
+
  -- Tomas Larsson <larre.b.larsson@gmail.com>  Fri, 27 Mar 2026 09:00:00 +0100
 
 scarpa-connection-manager (1.2.17-1) stable; urgency=medium
 
   * Updates on README.md
-  
+
  -- Tomas Larsson <larre.b.larsson@gmail.com>  Fri, 27 Mar 2026 09:00:00 +0100
 
 scarpa-connection-manager (1.2.16-1) stable; urgency=medium
 
   * Updates on README.md and user_guide.html
-  
+
  -- Tomas Larsson <larre.b.larsson@gmail.com>  Fri, 27 Mar 2026 09:00:00 +0100
 
 scarpa-connection-manager (1.2.11-1) stable; urgency=medium
 
   * Adding SFTP GUI functionallity
   * Fixed Release Info for APT Repo 386 warning
-  
+
  -- Tomas Larsson <larre.b.larsson@gmail.com>  Thu, 26 Mar 2026 12:00:00 +0100
 
 scarpa-connection-manager (1.2.10-2) stable; urgency=medium
 
   * Smaller changes to user interface
-  
- -- Tomas Larsson <larre.b.larsson@gmail.com>  Fri, 12 Dec 2025 15:00:00 +0100
 
+ -- Tomas Larsson <larre.b.larsson@gmail.com>  Fri, 12 Dec 2025 15:00:00 +0100
 
 scarpa-connection-manager (1.2.10-1) stable; urgency=medium
 
   * Added append text to log file
-  
+
  -- Tomas Larsson <larre.b.larsson@gmail.com>  Mon, 08 Dec 2025 15:00:00 +0100
 
 scarpa-connection-manager (1.2.9-3) stable; urgency=medium
 
   * Updated user_guide.html
-  
+
  -- Tomas Larsson <larre.b.larsson@gmail.com>  Mon, 08 Dec 2025 15:00:00 +0100
 
 scarpa-connection-manager (1.2.9-2) stable; urgency=medium
 
   * Small fix for About version
-  
+
  -- Tomas Larsson <larre.b.larsson@gmail.com>  Mon, 08 Dec 2025 15:00:00 +0100
 
 scarpa-connection-manager (1.2.9-1) stable; urgency=medium
 
   * Introduce send a command file at login
-  
+
  -- Tomas Larsson <larre.b.larsson@gmail.com>  Mon, 08 Dec 2025 15:00:00 +0100
 
 scarpa-connection-manager (1.2.8-1) stable; urgency=medium
 
-  * Introduce inline setting on terminal session window 
-  
+  * Introduce inline setting on terminal session window
+
  -- Tomas Larsson <larre.b.larsson@gmail.com>  Mon, 08 Dec 2025 07:00:00 +0100
 
 scarpa-connection-manager (1.2.7-1) stable; urgency=medium
 
-  * Introduce new Terminal Tab and move of Buffer and Anti-Idle to new Terminal Tab 
+  * Introduce new Terminal Tab and move of Buffer and Anti-Idle to new Terminal Tab
   * Added append/overwright option for logging
   * Fixed carbage character log file output
-  
+
  -- Tomas Larsson <larre.b.larsson@gmail.com>  Thu, 04 Dec 2025 07:00:00 +0100
 
 scarpa-connection-manager (1.2.6-2) stable; urgency=medium
 
   * Changed look of Anti Idle funciton
-  
+
  -- Tomas Larsson <larre.b.larsson@gmail.com>  Thu, 04 Dec 2025 07:00:00 +0100
 
 scarpa-connection-manager (1.2.6-1) stable; urgency=medium
 
   * Changed name of "Global Settings" to "Default Settings"
   * Introduced Anti Idle funciton
-  
+
  -- Tomas Larsson <larre.b.larsson@gmail.com>  Tue, 25 Nov 2025 07:00:00 +0100
 
 scarpa-connection-manager (1.2.5-1) stable; urgency=medium
 
   * Fixed all focus on main window
-  
+
  -- Tomas Larsson <larre.b.larsson@gmail.com>  Tue, 25 Nov 2025 07:00:00 +0100
 
 scarpa-connection-manager (1.2.4-1) stable; urgency=medium
 
   * Added Global Setting to change default apperance
   * Fixed Paste Server in rightclick meny at Folder
-  
+
  -- Tomas Larsson <larre.b.larsson@gmail.com>  Tue, 25 Nov 2025 07:00:00 +0100
 
 scarpa-connection-manager (1.2.3-1) stable; urgency=medium
 
   * Fixed error at atp update
-  
+
  -- Tomas Larsson <larre.b.larsson@gmail.com>  Tue, 25 Nov 2025 07:00:00 +0100
 
 scarpa-connection-manager (1.2.2-1) stable; urgency=medium
@@ -626,7 +623,7 @@ scarpa-connection-manager (1.2.2-1) stable; urgency=medium
   * At export config when changing from default clear text json to encrypted gpg the file name the extenstion on from .json to .gpg
   * Introduced Delete server and folders at push on Delete key on keyboard
   * Introduced Ctrl C and Ctrl V for copy paste servers
-  
+
  -- Tomas Larsson <larre.b.larsson@gmail.com>  Tue, 25 Nov 2025 07:00:00 +0100
 
 scarpa-connection-manager (1.2.1-1) stable; urgency=medium
@@ -634,4 +631,3 @@ scarpa-connection-manager (1.2.1-1) stable; urgency=medium
   * Initial APT repository release of SCARPA Connection Manager.
 
  -- Tomas Larsson <larre.b.larsson@gmail.com>  Wed, 19 Nov 2025 14:40:00 +0100
-
